@@ -467,6 +467,207 @@ body {
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyjztPgz2jpT8JU7qFDl2UtL4BrLw0Knf1_N_yQITN6sLuqDSfyl9ajnEWfoeRQxufSqg/exec';
 
+// ── Geometry parsers ──────────────────────────────────────────────────────────
+
+// Signed volume of a triangle (used for mesh volume via divergence theorem)
+function signedTriangleVolume(ax,ay,az, bx,by,bz, cx,cy,cz) {
+  return (ax*(by*cz - bz*cy) + ay*(bz*cx - bx*cz) + az*(bx*cy - by*cx)) / 6.0;
+}
+
+// Parse binary STL → { volume_mm3, bbox: {x,y,z} in mm }
+async function parseSTL(file) {
+  const buf    = await file.arrayBuffer();
+  const view   = new DataView(buf);
+  const nTri   = view.getUint32(80, true);
+
+  // Detect ASCII STL (starts with "solid")
+  const header = new Uint8Array(buf, 0, 5);
+  const isASCII = String.fromCharCode(...header) === 'solid';
+
+  let volume = 0;
+  let minX=Infinity, minY=Infinity, minZ=Infinity;
+  let maxX=-Infinity, maxY=-Infinity, maxZ=-Infinity;
+
+  if (!isASCII && nTri > 0 && buf.byteLength === 84 + nTri * 50) {
+    // Binary STL
+    for (let i = 0; i < nTri; i++) {
+      const base = 84 + i * 50;
+      // Skip 12-byte normal, then 3 vertices × 12 bytes
+      const ax = view.getFloat32(base+12, true), ay = view.getFloat32(base+16, true), az = view.getFloat32(base+20, true);
+      const bx = view.getFloat32(base+24, true), by = view.getFloat32(base+28, true), bz = view.getFloat32(base+32, true);
+      const cx = view.getFloat32(base+36, true), cy = view.getFloat32(base+40, true), cz = view.getFloat32(base+44, true);
+      volume += signedTriangleVolume(ax,ay,az, bx,by,bz, cx,cy,cz);
+      minX=Math.min(minX,ax,bx,cx); maxX=Math.max(maxX,ax,bx,cx);
+      minY=Math.min(minY,ay,by,cy); maxY=Math.max(maxY,ay,by,cy);
+      minZ=Math.min(minZ,az,bz,cz); maxZ=Math.max(maxZ,az,bz,cz);
+    }
+  } else {
+    // ASCII STL
+    const text   = await file.text();
+    const vRe    = /vertex\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)/g;
+    const verts  = [];
+    let m;
+    while ((m = vRe.exec(text)) !== null) {
+      verts.push([parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3])]);
+    }
+    for (let i = 0; i+2 < verts.length; i+=3) {
+      const [ax,ay,az] = verts[i], [bx,by,bz] = verts[i+1], [cx,cy,cz] = verts[i+2];
+      volume += signedTriangleVolume(ax,ay,az, bx,by,bz, cx,cy,cz);
+      minX=Math.min(minX,ax,bx,cx); maxX=Math.max(maxX,ax,bx,cx);
+      minY=Math.min(minY,ay,by,cy); maxY=Math.max(maxY,ay,by,cy);
+      minZ=Math.min(minZ,az,bz,cz); maxZ=Math.max(maxZ,az,bz,cz);
+    }
+  }
+
+  return {
+    volume_mm3: Math.abs(volume),
+    bbox: { x: maxX-minX, y: maxY-minY, z: maxZ-minZ },
+  };
+}
+
+// Parse OBJ → { volume_mm3, bbox }
+async function parseOBJ(file) {
+  const text  = await file.text();
+  const lines = text.split('\n');
+  const verts = [];
+  let volume  = 0;
+  let minX=Infinity, minY=Infinity, minZ=Infinity;
+  let maxX=-Infinity, maxY=-Infinity, maxZ=-Infinity;
+
+  for (const line of lines) {
+    const parts = line.trim().split(/\s+/);
+    if (parts[0] === 'v') {
+      const x=parseFloat(parts[1]), y=parseFloat(parts[2]), z=parseFloat(parts[3]);
+      verts.push([x,y,z]);
+      minX=Math.min(minX,x); maxX=Math.max(maxX,x);
+      minY=Math.min(minY,y); maxY=Math.max(maxY,y);
+      minZ=Math.min(minZ,z); maxZ=Math.max(maxZ,z);
+    }
+  }
+  for (const line of lines) {
+    const parts = line.trim().split(/\s+/);
+    if (parts[0] === 'f') {
+      // Fan triangulation for polygonal faces
+      const idx = parts.slice(1).map(p => parseInt(p.split('/')[0]) - 1);
+      for (let i = 1; i+1 < idx.length; i++) {
+        const [ax,ay,az] = verts[idx[0]];
+        const [bx,by,bz] = verts[idx[i]];
+        const [cx,cy,cz] = verts[idx[i+1]];
+        volume += signedTriangleVolume(ax,ay,az, bx,by,bz, cx,cy,cz);
+      }
+    }
+  }
+
+  return {
+    volume_mm3: Math.abs(volume),
+    bbox: { x: maxX-minX, y: maxY-minY, z: maxZ-minZ },
+  };
+}
+
+// Parse 3MF (ZIP containing XML) → { volume_mm3, bbox }
+async function parse3MF(file) {
+  // 3MF is a ZIP — use DecompressionStream on each entry via manual ZIP parsing
+  const buf   = await file.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+
+  // Find the model XML by scanning ZIP local file headers (signature 0x04034b50)
+  let xmlText = null;
+  let offset  = 0;
+  while (offset < bytes.length - 4) {
+    if (bytes[offset]===0x50 && bytes[offset+1]===0x4B &&
+        bytes[offset+2]===0x03 && bytes[offset+3]===0x04) {
+      const compression  = bytes[offset+8]  | (bytes[offset+9]  << 8);
+      const compSize     = bytes[offset+18] | (bytes[offset+19] << 8) | (bytes[offset+20] << 16) | (bytes[offset+21] << 24);
+      const uncompSize   = bytes[offset+22] | (bytes[offset+23] << 8) | (bytes[offset+24] << 16) | (bytes[offset+25] << 24);
+      const fnLen        = bytes[offset+26] | (bytes[offset+27] << 8);
+      const extraLen     = bytes[offset+28] | (bytes[offset+29] << 8);
+      const dataStart    = offset + 30 + fnLen + extraLen;
+      const filename     = new TextDecoder().decode(bytes.subarray(offset+30, offset+30+fnLen));
+
+      if (filename.endsWith('.model')) {
+        const compData = bytes.subarray(dataStart, dataStart + compSize);
+        if (compression === 0) {
+          // Stored uncompressed
+          xmlText = new TextDecoder().decode(compData);
+        } else if (compression === 8) {
+          // Deflate compressed
+          try {
+            const ds     = new DecompressionStream('deflate-raw');
+            const writer = ds.writable.getWriter();
+            const reader = ds.readable.getReader();
+            writer.write(compData); writer.close();
+            const chunks = [];
+            let done = false;
+            while (!done) {
+              const { value, done: d } = await reader.read();
+              if (value) chunks.push(value);
+              done = d;
+            }
+            const out = new Uint8Array(chunks.reduce((a,c) => a+c.length, 0));
+            let pos = 0;
+            for (const c of chunks) { out.set(c, pos); pos += c.length; }
+            xmlText = new TextDecoder().decode(out);
+          } catch(e) { /* fall through */ }
+        }
+        if (xmlText) break;
+      }
+      offset = dataStart + compSize;
+    } else {
+      offset++;
+    }
+  }
+
+  if (!xmlText) throw new Error('Could not read 3MF model data');
+
+  // Parse vertices and triangles from XML
+  const parser  = new DOMParser();
+  const doc     = parser.parseFromString(xmlText, 'application/xml');
+  const meshes  = doc.querySelectorAll('mesh');
+
+  let volume = 0;
+  let minX=Infinity, minY=Infinity, minZ=Infinity;
+  let maxX=-Infinity, maxY=-Infinity, maxZ=-Infinity;
+
+  for (const mesh of meshes) {
+    const vertNodes = mesh.querySelectorAll('vertices vertex');
+    const triNodes  = mesh.querySelectorAll('triangles triangle');
+    const verts     = Array.from(vertNodes).map(v => [
+      parseFloat(v.getAttribute('x')),
+      parseFloat(v.getAttribute('y')),
+      parseFloat(v.getAttribute('z')),
+    ]);
+    for (const v of verts) {
+      minX=Math.min(minX,v[0]); maxX=Math.max(maxX,v[0]);
+      minY=Math.min(minY,v[1]); maxY=Math.max(maxY,v[1]);
+      minZ=Math.min(minZ,v[2]); maxZ=Math.max(maxZ,v[2]);
+    }
+    for (const tri of triNodes) {
+      const a=parseInt(tri.getAttribute('v1')), b=parseInt(tri.getAttribute('v2')), c=parseInt(tri.getAttribute('v3'));
+      const [ax,ay,az]=verts[a], [bx,by,bz]=verts[b], [cx,cy,cz]=verts[c];
+      volume += signedTriangleVolume(ax,ay,az, bx,by,bz, cx,cy,cz);
+    }
+  }
+
+  return {
+    volume_mm3: Math.abs(volume),
+    bbox: { x: maxX-minX, y: maxY-minY, z: maxZ-minZ },
+  };
+}
+
+// Dispatch to correct parser by extension
+async function analyseGeometry(file) {
+  const e = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+  if (e === '.stl')              return await parseSTL(file);
+  if (e === '.obj')              return await parseOBJ(file);
+  if (e === '.3mf')              return await parse3MF(file);
+  // STEP files: fall back to file size proxy
+  return { volume_mm3: Math.max(10, file.size / 1024) * 0.4, bbox: null };
+}
+
+// Format mm³ → cm³ nicely
+const fmtVol = v => v >= 1000 ? (v/1000).toFixed(2)+' cm³' : v.toFixed(1)+' mm³';
+const fmtMm  = v => v.toFixed(1)+' mm';
+
 // Materials and finishes are display-only — no rates here
 const MATERIALS = [
   { id:'fdm',    name:'FDM Standard',  tag:'FDM'     },
@@ -513,13 +714,32 @@ function goTo(n) {
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
-function addFiles(list) {
-  Array.from(list).forEach(f => {
-    if (!ALLOWED_EXT.includes(ext(f))) { showToast('Unsupported format: ' + f.name, true); return; }
-    if (files.find(x => x.file.name===f.name && x.file.size===f.size)) return;
-    files.push({ file:f, material:MATERIALS[0], finish:FINISHES[0], quantity:1 });
+async function addFiles(list) {
+  const newFiles = Array.from(list).filter(f => {
+    if (!ALLOWED_EXT.includes(ext(f))) { showToast('Unsupported format: ' + f.name, true); return false; }
+    if (files.find(x => x.file.name===f.name && x.file.size===f.size)) return false;
+    return true;
   });
+  if (!newFiles.length) return;
+
+  // Add with geometry=null (analysing state) and render immediately
+  newFiles.forEach(f => files.push({ file:f, material:MATERIALS[0], finish:FINISHES[0], quantity:1, geometry:null, analysing:true }));
   renderFiles();
+
+  // Analyse geometry in parallel
+  await Promise.all(newFiles.map(async f => {
+    const entry = files.find(x => x.file === f);
+    if (!entry) return;
+    try {
+      entry.geometry   = await analyseGeometry(f);
+      entry.analysing  = false;
+    } catch(e) {
+      entry.geometry   = null;
+      entry.analysing  = false;
+      entry.geoError   = true;
+    }
+    renderFiles();
+  }));
 }
 
 function removeFile(idx) { files.splice(idx,1); renderFiles(); }
@@ -540,7 +760,20 @@ function renderFiles() {
         </div>
         <div class="file-meta">
           <div class="fname">${item.file.name}</div>
-          <div class="fsize">${fmtSz(item.file.size)} &nbsp;·&nbsp; ${ext(item.file).toUpperCase()}</div>
+          <div class="fsize">
+            ${fmtSz(item.file.size)} &nbsp;·&nbsp; ${ext(item.file).toUpperCase()}
+            ${item.analysing
+              ? '&nbsp;·&nbsp; <span style="color:var(--blue);font-size:0.68rem;">analysing geometry…</span>'
+              : item.geoError
+                ? '&nbsp;·&nbsp; <span style="color:var(--muted);font-size:0.68rem;">geometry unavailable</span>'
+                : item.geometry && item.geometry.bbox
+                  ? \`&nbsp;·&nbsp; <span style="color:var(--sub);font-size:0.68rem;">
+                      \${fmtMm(item.geometry.bbox.x)} × \${fmtMm(item.geometry.bbox.y)} × \${fmtMm(item.geometry.bbox.z)}
+                      &nbsp;·&nbsp; \${fmtVol(item.geometry.volume_mm3)}
+                    </span>\`
+                  : ''
+            }
+          </div>
         </div>
         <button class="file-remove-btn" data-idx="${idx}" title="Remove">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -605,7 +838,11 @@ function buildQuoteHTML(data) {
       <div class="quote-line-item">
         <div class="qli-left">
           <div class="qli-name">${i.filename}</div>
-          <div class="qli-meta">${i.materialName} &nbsp;·&nbsp; ${i.finishName} &nbsp;·&nbsp; Qty ${i.quantity}</div>
+          <div class="qli-meta">
+            ${i.materialName} &nbsp;·&nbsp; ${i.finishName} &nbsp;·&nbsp; Qty ${i.quantity}
+            ${i.bbox ? '&nbsp;·&nbsp; ' + i.bbox : ''}
+            ${i.volume_mm3 ? '&nbsp;·&nbsp; ' + (i.volume_mm3 >= 1000 ? (i.volume_mm3/1000).toFixed(2)+' cm³' : i.volume_mm3.toFixed(0)+' mm³') : ''}
+          </div>
         </div>
         <div class="qli-price">$${i.lineTotal.toFixed(2)}</div>
       </div>`).join('') +
@@ -624,14 +861,24 @@ document.getElementById('btn-to-quote').addEventListener('click', async () => {
   document.getElementById('quote-result').style.display = 'none';
 
   try {
+    // Block submission if any file is still being analysed
+    if (files.some(f => f.analysing)) {
+      document.getElementById('analyzing').classList.remove('visible');
+      goTo(1);
+      document.getElementById('quote-error').classList.add('visible');
+      document.getElementById('quote-error-msg').textContent = 'Still analysing geometry — please wait a moment and try again.';
+      return;
+    }
+
     const payload = {
       action: 'get_quote',
       items: files.map(item => ({
-        filename:   item.file.name,
-        fileSize:   item.file.size,
-        materialId: item.material.id,
-        finishId:   item.finish.id,
-        quantity:   item.quantity,
+        filename:    item.file.name,
+        volume_mm3:  item.geometry ? item.geometry.volume_mm3 : Math.max(10, item.file.size / 1024) * 0.4,
+        bbox:        item.geometry ? item.geometry.bbox : null,
+        materialId:  item.material.id,
+        finishId:    item.finish.id,
+        quantity:    item.quantity,
       })),
     };
 
@@ -721,11 +968,13 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
       price:        '$' + quoteData.total.toFixed(2) + ' ' + currency,
       lead_time:    quoteData.leadTime,
       items: quoteData.items.map(item => ({
-        filename: item.filename,
-        material: item.materialName,
-        finish:   item.finishName,
-        quantity: item.quantity,
-        price:    '$' + item.lineTotal.toFixed(2),
+        filename:   item.filename,
+        material:   item.materialName,
+        finish:     item.finishName,
+        quantity:   item.quantity,
+        volume_mm3: item.volume_mm3 || null,
+        bbox:       item.bbox       || null,
+        price:      '$' + item.lineTotal.toFixed(2),
       })),
       files: filePayloads,
     };
