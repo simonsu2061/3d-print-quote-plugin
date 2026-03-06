@@ -3,419 +3,437 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>3D Print Instant Quote</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<title>Instant Quote | Protoland</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --bg: #0a0a0f;
-    --surface: #111118;
-    --surface2: #18181f;
-    --border: #2a2a38;
-    --accent: #7c6dfa;
-    --accent2: #4fffb0;
-    --text: #f0f0f8;
-    --muted: #6b6b88;
-    --error: #ff5c72;
-    --warn: #ffb347;
-    --radius: 12px;
-    --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
-  }
+:root {
+  --bg:       #f7f8fa;
+  --surface:  #ffffff;
+  --border:   #e4e6ea;
+  --border2:  #d0d3da;
+  --blue:     #094BCC;
+  --blue2:    #1a5ce0;
+  --blue-lt:  #eef2fd;
+  --text:     #111827;
+  --sub:      #6b7280;
+  --muted:    #9ca3af;
+  --success:  #059669;
+  --success-lt:#ecfdf5;
+  --warn:     #d97706;
+  --radius:   8px;
+  --radius-lg:12px;
+  --transition:0.15s ease;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow:    0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
+}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-  }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px 60px;
+  -webkit-font-smoothing: antialiased;
+}
 
-  /* ── Plugin Shell ── */
-  .plugin {
-    width: 100%;
-    max-width: 780px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(124,109,250,0.08);
-  }
+/* ── Shell ── */
+.plugin {
+  width: 100%;
+  max-width: 760px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
 
-  /* ── Header ── */
-  .plugin-header {
-    background: linear-gradient(135deg, #12121c 0%, #1a1a2e 100%);
-    border-bottom: 1px solid var(--border);
-    padding: 28px 32px 24px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-  .header-icon {
-    width: 44px; height: 44px;
-    background: linear-gradient(135deg, var(--accent), #a78bfa);
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-  .header-icon svg { width: 22px; height: 22px; color: #fff; }
-  .plugin-header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
-  .plugin-header p { font-size: 0.8rem; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
-  .header-badge {
-    margin-left: auto;
-    background: rgba(79,255,176,0.12);
-    color: var(--accent2);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    padding: 4px 10px;
-    border-radius: 999px;
-    border: 1px solid rgba(79,255,176,0.25);
-    white-space: nowrap;
-  }
+/* ── Header ── */
+.plugin-header {
+  padding: 24px 32px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+}
+.wordmark {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.wordmark span { color: var(--blue); }
+.header-sep { width: 1px; height: 20px; background: var(--border); }
+.header-sub {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--sub);
+}
+.secure-badge {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--sub);
+}
+.secure-badge svg { width: 13px; height: 13px; color: var(--success); flex-shrink: 0; }
 
-  /* ── Steps ── */
-  .steps-bar {
-    display: flex;
-    gap: 0;
-    border-bottom: 1px solid var(--border);
-    padding: 0 32px;
-    background: var(--surface2);
-  }
-  .step-tab {
-    display: flex; align-items: center; gap: 8px;
-    padding: 14px 0;
-    margin-right: 28px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--muted);
-    border-bottom: 2px solid transparent;
-    cursor: default;
-    transition: color var(--transition);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-  .step-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-  .step-tab.done { color: var(--accent2); }
-  .step-num {
-    width: 20px; height: 20px;
-    border-radius: 50%;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--border);
-    color: var(--muted);
-    transition: all var(--transition);
-  }
-  .step-tab.active .step-num { background: var(--accent); color: #fff; }
-  .step-tab.done .step-num { background: var(--accent2); color: #0a0a0f; }
+/* ── Step bar ── */
+.step-bar {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  gap: 0;
+  overflow-x: auto;
+}
+.step-tab {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 0; margin-right: 32px;
+  font-size: 0.78rem; font-weight: 600;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color var(--transition);
+  cursor: default;
+}
+.step-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+.step-tab.done { color: var(--success); }
+.step-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  font-size: 0.65rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--border); color: var(--muted);
+  transition: all var(--transition); flex-shrink: 0;
+}
+.step-tab.active .step-num { background: var(--blue); color: #fff; }
+.step-tab.done .step-num { background: var(--success); color: #fff; }
+.step-tab.done .step-num::after { content: '✓'; font-size: 0.6rem; }
+.step-tab.done .step-num span { display: none; }
 
-  /* ── Body ── */
-  .plugin-body { padding: 28px 32px 32px; }
+/* Progress */
+.progress-wrap { height: 3px; background: var(--border); }
+.progress-fill {
+  height: 100%;
+  background: var(--blue);
+  transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+}
 
-  /* ── Stage panels ── */
-  .stage { display: none; animation: fadeIn 0.3s ease; }
-  .stage.active { display: block; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+/* ── Body ── */
+.plugin-body { padding: 32px; }
+.stage { display: none; }
+.stage.active { display: block; animation: fadeUp 0.2s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
 
-  /* ── Upload Zone ── */
-  .upload-zone {
-    border: 2px dashed var(--border);
-    border-radius: var(--radius);
-    padding: 48px 32px;
-    text-align: center;
-    cursor: pointer;
-    transition: all var(--transition);
-    position: relative;
-    background: rgba(124,109,250,0.02);
-  }
-  .upload-zone:hover, .upload-zone.drag-over {
-    border-color: var(--accent);
-    background: rgba(124,109,250,0.06);
-  }
-  .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-  .upload-icon { margin: 0 auto 16px; width: 56px; height: 56px; opacity: 0.4; }
-  .upload-zone h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
-  .upload-zone p { font-size: 0.8rem; color: var(--muted); font-family: 'DM Mono', monospace; }
-  .upload-zone .browse-btn {
-    display: inline-block;
-    margin-top: 16px;
-    padding: 8px 20px;
-    background: var(--accent);
-    color: #fff;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    pointer-events: none;
-  }
+/* Section heading */
+.section-heading {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+  margin-top: 28px;
+}
+.section-heading:first-child { margin-top: 0; }
 
-  /* ── File info ── */
-  .file-info {
-    display: none;
-    align-items: center;
-    gap: 16px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px 20px;
-    margin-top: 16px;
-  }
-  .file-info.visible { display: flex; }
-  .file-icon {
-    width: 40px; height: 40px;
-    background: rgba(124,109,250,0.15);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-  .file-icon svg { width: 20px; height: 20px; color: var(--accent); }
-  .file-details { flex: 1; min-width: 0; }
-  .file-details .fname { font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .file-details .fmeta { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
-  .file-remove {
-    background: none; border: none; cursor: pointer;
-    color: var(--muted); transition: color var(--transition);
-    padding: 4px;
-  }
-  .file-remove:hover { color: var(--error); }
+/* ── Upload zone ── */
+.upload-zone {
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 48px 32px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  background: var(--bg);
+  transition: all var(--transition);
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--blue);
+  background: var(--blue-lt);
+}
+.upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-icon {
+  width: 52px; height: 52px; margin: 0 auto 16px;
+  background: var(--blue-lt);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.upload-icon svg { width: 24px; height: 24px; color: var(--blue); }
+.upload-zone h3 { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.upload-zone p { font-size: 0.82rem; color: var(--sub); line-height: 1.5; }
+.upload-zone .browse-link { color: var(--blue); font-weight: 600; }
+.formats { margin-top: 14px; display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.fmt-tag {
+  font-size: 0.68rem; font-weight: 600;
+  padding: 3px 8px; border-radius: 4px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--sub);
+}
 
-  /* ── Section title ── */
-  .section-title { font-size: 0.7rem; font-family: 'DM Mono', monospace; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; margin-top: 24px; }
-  .section-title:first-child { margin-top: 0; }
+/* ── File list ── */
+.files-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.file-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  animation: fadeUp 0.18s ease;
+  transition: border-color var(--transition);
+}
+.file-item:hover { border-color: var(--border2); }
+.file-item-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.file-thumb {
+  width: 36px; height: 36px;
+  background: var(--blue-lt);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.file-thumb svg { width: 17px; height: 17px; color: var(--blue); }
+.file-meta { flex: 1; min-width: 0; }
+.file-meta .fname {
+  font-size: 0.85rem; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.file-meta .fsize { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
+.file-remove-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); padding: 5px; border-radius: 5px;
+  transition: all var(--transition); display: flex; align-items: center;
+}
+.file-remove-btn:hover { color: #dc2626; background: #fef2f2; }
 
-  /* ── Material grid ── */
-  .material-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 10px;
-  }
-  .material-card {
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 12px;
-    cursor: pointer;
-    transition: all var(--transition);
-    background: var(--surface2);
-    position: relative;
-    overflow: hidden;
-  }
-  .material-card::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    background: var(--mat-color, var(--accent));
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform var(--transition);
-  }
-  .material-card:hover { border-color: rgba(124,109,250,0.4); transform: translateY(-2px); }
-  .material-card.selected { border-color: var(--accent); background: rgba(124,109,250,0.08); }
-  .material-card.selected::before { transform: scaleX(1); }
-  .material-dot {
-    width: 10px; height: 10px; border-radius: 50%;
-    background: var(--mat-color, #888);
-    margin-bottom: 10px;
-    box-shadow: 0 0 8px var(--mat-color, transparent);
-  }
-  .material-name { font-size: 0.82rem; font-weight: 600; margin-bottom: 3px; }
-  .material-desc { font-size: 0.7rem; color: var(--muted); line-height: 1.4; }
-  .material-tag {
-    display: inline-block;
-    margin-top: 8px;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    padding: 2px 7px;
-    border-radius: 4px;
-    background: rgba(124,109,250,0.12);
-    color: var(--accent);
-  }
+.file-item-config {
+  padding: 14px 16px;
+  display: grid; grid-template-columns: 1fr 1fr 80px; gap: 12px; align-items: end;
+}
 
-  /* ── Config row ── */
-  .config-row { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
-  .config-group { flex: 1; min-width: 140px; }
-  .config-group label { display: block; font-size: 0.7rem; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 6px; letter-spacing: 0.05em; text-transform: uppercase; }
-  .config-group select, .config-group input[type=number] {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 12px;
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.82rem;
-    appearance: none;
-    -webkit-appearance: none;
-    transition: border-color var(--transition);
-    outline: none;
-  }
-  .config-group select:focus, .config-group input[type=number]:focus { border-color: var(--accent); }
-  .select-wrapper { position: relative; }
-  .select-wrapper::after { content: '▾'; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; font-size: 0.75rem; }
+/* Controls */
+.ctrl-group { display: flex; flex-direction: column; gap: 5px; }
+.ctrl-group label {
+  font-size: 0.68rem; font-weight: 600;
+  color: var(--sub); letter-spacing: 0.04em;
+}
+.ctrl-group select, .ctrl-group input[type=number] {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 11px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.83rem; color: var(--text);
+  outline: none; transition: border-color var(--transition);
+  appearance: none; -webkit-appearance: none; width: 100%;
+  box-shadow: var(--shadow-sm);
+}
+.ctrl-group select:focus, .ctrl-group input[type=number]:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(9,75,204,0.1);
+}
+.select-wrap { position: relative; }
+.select-wrap::after {
+  content: '▾'; position: absolute; right: 10px; top: 50%;
+  transform: translateY(-50%); color: var(--muted);
+  pointer-events: none; font-size: 0.7rem;
+}
 
-  /* ── Infill slider ── */
-  .slider-wrap { position: relative; }
-  input[type=range] {
-    -webkit-appearance: none; appearance: none;
-    width: 100%; height: 4px;
-    background: linear-gradient(to right, var(--accent) var(--pct, 50%), var(--border) var(--pct, 50%));
-    border-radius: 4px; outline: none; cursor: pointer;
-  }
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none; appearance: none;
-    width: 18px; height: 18px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 8px rgba(124,109,250,0.5);
-    cursor: pointer;
-    transition: box-shadow var(--transition);
-  }
-  input[type=range]:hover::-webkit-slider-thumb { box-shadow: 0 0 14px rgba(124,109,250,0.7); }
-  .slider-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 6px; }
-  .slider-val { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--accent); font-weight: 500; }
+/* Add more btn */
+.add-file-btn {
+  display: flex; align-items: center; gap: 7px;
+  width: 100%; padding: 10px 16px; margin-top: 10px;
+  background: transparent;
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  color: var(--sub);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem; font-weight: 600;
+  cursor: pointer; transition: all var(--transition); justify-content: center;
+  position: relative;
+}
+.add-file-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-lt); }
+.add-file-btn input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
-  /* ── Quote result ── */
-  .quote-card {
-    background: linear-gradient(135deg, #12121f 0%, #1a1230 100%);
-    border: 1px solid rgba(124,109,250,0.3);
-    border-radius: var(--radius);
-    padding: 28px;
-    margin-bottom: 20px;
-    position: relative;
-    overflow: hidden;
-  }
-  .quote-card::after {
-    content: '';
-    position: absolute; top: -40px; right: -40px;
-    width: 160px; height: 160px;
-    background: radial-gradient(circle, rgba(124,109,250,0.15) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  .quote-label { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
-  .quote-price { font-size: 2.8rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
-  .quote-price span { color: var(--accent); }
-  .quote-price sub { font-size: 1rem; color: var(--muted); font-weight: 400; }
-  .quote-range { font-size: 0.78rem; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 6px; }
-  .quote-breakdown {
-    margin-top: 20px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-  .breakdown-item { background: rgba(255,255,255,0.04); border-radius: 8px; padding: 12px 14px; }
-  .breakdown-item .b-label { font-size: 0.68rem; color: var(--muted); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; }
-  .breakdown-item .b-val { font-size: 0.9rem; font-weight: 600; margin-top: 3px; }
+/* ── Quote card ── */
+.quote-summary-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.quote-summary-header {
+  padding: 20px 24px;
+  background: var(--blue);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.quote-total-lbl { font-size: 0.7rem; font-weight: 600; color: rgba(255,255,255,0.6); margin-bottom: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
+.quote-total-amt { font-size: 2.2rem; font-weight: 700; color: #fff; letter-spacing: -0.03em; line-height: 1; }
+.quote-ref-txt { font-size: 0.7rem; color: rgba(255,255,255,0.5); margin-top: 5px; }
+.quote-lead-box {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px; padding: 10px 16px; text-align: right;
+}
+.quote-lead-box .ql { font-size: 0.65rem; font-weight: 600; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.08em; }
+.quote-lead-box .qv { font-size: 0.95rem; font-weight: 700; color: #fff; margin-top: 3px; }
 
-  /* ── Summary table ── */
-  .summary-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-  .summary-table tr { border-bottom: 1px solid var(--border); }
-  .summary-table tr:last-child { border-bottom: none; }
-  .summary-table td { padding: 10px 0; font-size: 0.85rem; }
-  .summary-table td:last-child { text-align: right; font-family: 'DM Mono', monospace; color: var(--accent); }
-  .summary-table .total-row td { font-weight: 700; font-size: 1rem; padding-top: 14px; color: var(--text); }
-  .summary-table .total-row td:last-child { color: var(--accent2); }
+.quote-line-items { background: var(--surface); }
+.quote-line-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 24px; border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.quote-line-item:last-child { border-bottom: none; }
+.qli-left { display: flex; flex-direction: column; gap: 2px; }
+.qli-name { font-weight: 600; color: var(--text); }
+.qli-meta { font-size: 0.72rem; color: var(--muted); }
+.qli-price { font-weight: 700; color: var(--blue); font-size: 0.9rem; }
+.quote-total-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px;
+  background: var(--bg);
+  border-top: 2px solid var(--border);
+}
+.quote-total-row .label { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+.quote-total-row .amount { font-size: 1rem; font-weight: 700; color: var(--blue); }
 
-  /* ── Form fields ── */
-  .form-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-  .form-group { flex: 1; min-width: 180px; }
-  .form-group label { display: block; font-size: 0.7rem; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 6px; letter-spacing: 0.05em; text-transform: uppercase; }
-  .form-group input, .form-group textarea {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 12px;
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-    font-size: 0.85rem;
-    outline: none;
-    transition: border-color var(--transition);
-  }
-  .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
-  .form-group textarea { resize: vertical; min-height: 80px; }
+/* ── Form ── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-group label { font-size: 0.78rem; font-weight: 600; color: var(--text); }
+.form-group input, .form-group textarea {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem; color: var(--text);
+  outline: none; transition: all var(--transition); width: 100%;
+  box-shadow: var(--shadow-sm);
+}
+.form-group input::placeholder, .form-group textarea::placeholder { color: var(--muted); }
+.form-group input:focus, .form-group textarea:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(9,75,204,0.1);
+}
+.form-group textarea { resize: vertical; min-height: 80px; }
+.required-note { font-size: 0.72rem; color: var(--muted); margin-top: 6px; }
 
-  /* ── Buttons ── */
-  .btn-row { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
-  .btn {
-    padding: 11px 24px;
-    border-radius: 9px;
-    font-family: 'Syne', sans-serif;
-    font-weight: 700;
-    font-size: 0.85rem;
-    cursor: pointer;
-    border: none;
-    transition: all var(--transition);
-    letter-spacing: 0.02em;
-  }
-  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
-  .btn-ghost:hover { border-color: var(--text); color: var(--text); }
-  .btn-primary {
-    background: linear-gradient(135deg, var(--accent), #a78bfa);
-    color: #fff;
-    box-shadow: 0 4px 20px rgba(124,109,250,0.4);
-  }
-  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(124,109,250,0.5); }
-  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-  .btn-success {
-    background: linear-gradient(135deg, #1fc87a, var(--accent2));
-    color: #0a0a0f;
-    box-shadow: 0 4px 20px rgba(79,255,176,0.3);
-  }
-  .btn-success:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(79,255,176,0.4); }
+/* Confirm detail box */
+.confirm-box {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 20px;
+  font-size: 0.85rem; line-height: 1.9; color: var(--text);
+}
 
-  /* ── Progress bar ── */
-  .progress-bar-wrap { height: 3px; background: var(--border); border-radius: 0 0 4px 4px; overflow: hidden; }
-  .progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.5s cubic-bezier(0.4,0,0.2,1); }
+/* ── Buttons ── */
+.btn-row { display: flex; gap: 10px; margin-top: 28px; justify-content: flex-end; align-items: center; }
+.btn {
+  padding: 10px 22px; border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600; font-size: 0.83rem;
+  cursor: pointer; border: none; transition: all var(--transition);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-ghost {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--sub);
+}
+.btn-ghost:hover { border-color: var(--border2); color: var(--text); background: var(--bg); }
+.btn-primary {
+  background: var(--blue); color: #fff;
+  box-shadow: 0 1px 3px rgba(9,75,204,0.3);
+}
+.btn-primary:hover { background: var(--blue2); box-shadow: 0 4px 12px rgba(9,75,204,0.35); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+.btn-success {
+  background: var(--success); color: #fff;
+  box-shadow: 0 1px 3px rgba(5,150,105,0.3);
+}
+.btn-success:hover { background: #047857; box-shadow: 0 4px 12px rgba(5,150,105,0.35); }
+.btn-success:disabled { opacity: 0.45; cursor: not-allowed; }
 
-  /* ── Analyzing animation ── */
-  .analyzing {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    padding: 40px;
-    gap: 20px;
-    text-align: center;
-  }
-  .analyzing.visible { display: flex; }
-  .spinner {
-    width: 48px; height: 48px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .analyzing-text { font-size: 0.85rem; color: var(--muted); font-family: 'DM Mono', monospace; }
-  .analyzing-dots::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
-  @keyframes dots { 0%,20%{content:'.'} 40%{content:'..'} 60%,80%{content:'...'} 100%{content:''} }
+/* ── Analyzing / Submitting ── */
+.center-state {
+  display: none; flex-direction: column;
+  align-items: center; padding: 56px 32px; gap: 16px; text-align: center;
+}
+.center-state.visible { display: flex; }
+.spin-ring {
+  width: 40px; height: 40px;
+  border: 3px solid var(--border); border-top-color: var(--blue);
+  border-radius: 50%; animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.center-state h3 { font-size: 1rem; font-weight: 600; color: var(--text); }
+.center-state p { font-size: 0.82rem; color: var(--sub); max-width: 320px; line-height: 1.6; }
 
-  /* ── Toast ── */
-  .toast {
-    position: fixed; bottom: 24px; right: 24px;
-    background: var(--surface);
-    border: 1px solid var(--accent2);
-    color: var(--accent2);
-    padding: 12px 20px;
-    border-radius: 10px;
-    font-size: 0.82rem;
-    font-family: 'DM Mono', monospace;
-    transform: translateY(80px);
-    opacity: 0;
-    transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
-    z-index: 999;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  }
-  .toast.show { transform: translateY(0); opacity: 1; }
+/* ── Success ── */
+.success-icon {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: var(--success-lt);
+  border: 2px solid var(--success);
+  display: flex; align-items: center; justify-content: center;
+  animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes popIn { from { transform:scale(0); opacity:0; } to { transform:scale(1); opacity:1; } }
+.success-icon svg { width: 28px; height: 28px; color: var(--success); }
+.order-ref-chip {
+  font-size: 0.78rem; font-weight: 600;
+  background: var(--bg); border: 1px solid var(--border);
+  padding: 7px 16px; border-radius: 999px; color: var(--sub);
+  letter-spacing: 0.04em;
+}
 
-  /* ── Responsive ── */
-  @media (max-width: 540px) {
-    .plugin-body { padding: 20px; }
-    .plugin-header { padding: 20px; }
-    .steps-bar { padding: 0 20px; overflow-x: auto; }
-    .quote-price { font-size: 2rem; }
-    .quote-breakdown { grid-template-columns: 1fr; }
-    .material-grid { grid-template-columns: repeat(2, 1fr); }
-  }
+/* ── Divider ── */
+.divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+/* ── Info banner ── */
+.info-banner {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--blue-lt); border: 1px solid rgba(9,75,204,0.15);
+  border-radius: var(--radius); padding: 12px 16px;
+  font-size: 0.8rem; color: #1e40af; line-height: 1.5;
+  margin-bottom: 20px;
+}
+.info-banner svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--text); color: #fff;
+  padding: 11px 16px; border-radius: var(--radius);
+  font-size: 0.8rem; font-weight: 500;
+  transform: translateY(80px); opacity: 0;
+  transition: all 0.25s ease; z-index: 999;
+  box-shadow: var(--shadow-lg); max-width: 300px;
+}
+.toast.warn { background: #7f1d1d; }
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── Responsive ── */
+@media (max-width: 560px) {
+  .plugin-body { padding: 20px 16px 28px; }
+  .plugin-header { padding: 16px; }
+  .step-bar { padding: 0 16px; }
+  .file-item-config { grid-template-columns: 1fr 1fr; }
+  .file-item-config .ctrl-group:last-child { grid-column: 1/-1; }
+  .form-grid { grid-template-columns: 1fr; }
+  .quote-summary-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .quote-lead-box { text-align: left; }
+}
 </style>
 </head>
 <body>
@@ -424,402 +442,504 @@
 
   <!-- Header -->
   <div class="plugin-header">
-    <div class="header-icon">
+    <div class="wordmark">Proto<span>land</span></div>
+    <div class="header-sep"></div>
+    <div class="header-sub">Instant Quote</div>
+    <div class="secure-badge">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
       </svg>
-    </div>
-    <div>
-      <h1>Instant Print Quote</h1>
-      <p>Upload · Configure · Order</p>
-    </div>
-    <div class="header-badge">⚡ Live Pricing</div>
-  </div>
-
-  <!-- Step tabs -->
-  <div class="steps-bar">
-    <div class="step-tab active" id="tab-1">
-      <span class="step-num">1</span> Upload
-    </div>
-    <div class="step-tab" id="tab-2">
-      <span class="step-num">2</span> Configure
-    </div>
-    <div class="step-tab" id="tab-3">
-      <span class="step-num">3</span> Quote
-    </div>
-    <div class="step-tab" id="tab-4">
-      <span class="step-num">4</span> Order
+      Secure & Confidential
     </div>
   </div>
 
-  <!-- Progress bar -->
-  <div class="progress-bar-wrap">
-    <div class="progress-bar" id="progress-bar" style="width:25%"></div>
+  <!-- Steps -->
+  <div class="step-bar">
+    <div class="step-tab active" id="tab-1"><span class="step-num"><span>1</span></span> Upload Files</div>
+    <div class="step-tab" id="tab-2"><span class="step-num"><span>2</span></span> Your Quote</div>
+    <div class="step-tab" id="tab-3"><span class="step-num"><span>3</span></span> Your Details</div>
+    <div class="step-tab" id="tab-4"><span class="step-num"><span>4</span></span> Confirm</div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-fill" id="progress" style="width:25%"></div>
   </div>
 
-  <!-- Body -->
   <div class="plugin-body">
 
     <!-- Stage 1: Upload -->
     <div class="stage active" id="stage-1">
-      <div class="section-title">Your 3D Model</div>
+      <div class="info-banner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        All models uploaded to Protoland are secure and confidential. You retain all rights to your models.
+      </div>
+
       <div class="upload-zone" id="upload-zone">
-        <input type="file" id="file-input" accept=".stl,.obj,.3mf,.step,.stp" />
+        <input type="file" id="file-input" accept=".stl,.obj,.3mf,.step,.stp" multiple />
         <div class="upload-icon">
-          <svg viewBox="0 0 64 64" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="8" y="8" width="48" height="48" rx="8"/>
-            <path d="M32 20 L32 44"/><path d="M22 30 L32 20 L42 30"/>
-            <path d="M20 44 L44 44"/>
-          </svg>
-        </div>
-        <h3>Drop your model here</h3>
-        <p>.STL &nbsp;·&nbsp; .OBJ &nbsp;·&nbsp; .3MF &nbsp;·&nbsp; .STEP</p>
-        <div class="browse-btn">Browse Files</div>
-      </div>
-      <div class="file-info" id="file-info">
-        <div class="file-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/>
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
           </svg>
         </div>
-        <div class="file-details">
-          <div class="fname" id="fname">—</div>
-          <div class="fmeta" id="fmeta">—</div>
+        <h3>Drop files here or <span class="browse-link">browse</span></h3>
+        <p>Select one or multiple 3D model files at once.</p>
+        <div class="formats">
+          <span class="fmt-tag">.STL</span>
+          <span class="fmt-tag">.OBJ</span>
+          <span class="fmt-tag">.3MF</span>
+          <span class="fmt-tag">.STEP</span>
+          <span class="fmt-tag">.STP</span>
         </div>
-        <button class="file-remove" id="file-remove" title="Remove">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
       </div>
+
+      <div class="files-list" id="files-list"></div>
+
+      <button class="add-file-btn" id="add-more-btn" style="display:none;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Add more files
+        <input type="file" id="add-more-input" accept=".stl,.obj,.3mf,.step,.stp" multiple />
+      </button>
+
       <div class="btn-row">
-        <button class="btn btn-primary" id="btn-to-config" disabled>Continue →</button>
+        <button class="btn btn-primary" id="btn-to-quote" disabled>Get Quote →</button>
       </div>
     </div>
 
-    <!-- Stage 2: Configure -->
+    <!-- Stage 2: Quote -->
     <div class="stage" id="stage-2">
-      <div class="section-title">Material</div>
-      <div class="material-grid" id="material-grid">
-        <!-- Injected by JS -->
+      <div class="center-state visible" id="analyzing">
+        <div class="spin-ring"></div>
+        <h3>Calculating your quote</h3>
+        <p>Analysing your model configurations…</p>
       </div>
-
-      <div class="section-title" style="margin-top:22px;">Print Settings</div>
-      <div class="config-row">
-        <div class="config-group">
-          <label>Layer Height</label>
-          <div class="select-wrapper">
-            <select id="layer-height">
-              <option value="0.05">0.05 mm — Ultra Fine</option>
-              <option value="0.1" selected>0.10 mm — Fine</option>
-              <option value="0.2">0.20 mm — Standard</option>
-              <option value="0.3">0.30 mm — Draft</option>
-            </select>
-          </div>
-        </div>
-        <div class="config-group">
-          <label>Finish</label>
-          <div class="select-wrapper">
-            <select id="finish">
-              <option value="1">Raw</option>
-              <option value="1.15" selected>Lightly Cleaned</option>
-              <option value="1.3">Support Removed</option>
-              <option value="1.5">Sanded &amp; Polished</option>
-            </select>
-          </div>
-        </div>
-        <div class="config-group">
-          <label>Quantity</label>
-          <input type="number" id="quantity" value="1" min="1" max="999" />
-        </div>
-      </div>
-
-      <div class="section-title" style="margin-top:20px;">Infill Density — <span class="slider-val" id="infill-label">50%</span></div>
-      <div class="slider-wrap">
-        <input type="range" id="infill" min="10" max="100" value="50" step="5" />
-        <div class="slider-labels"><span>10% Light</span><span>50% Standard</span><span>100% Solid</span></div>
-      </div>
-
-      <div class="btn-row">
-        <button class="btn btn-ghost" id="btn-back-1">← Back</button>
-        <button class="btn btn-primary" id="btn-get-quote">Get Quote →</button>
-      </div>
-    </div>
-
-    <!-- Stage 3: Quote -->
-    <div class="stage" id="stage-3">
-      <div class="analyzing" id="analyzing">
-        <div class="spinner"></div>
-        <div>
-          <div style="font-weight:700;margin-bottom:6px;">Calculating your quote</div>
-          <div class="analyzing-text">Analyzing model geometry<span class="analyzing-dots"></span></div>
-        </div>
-      </div>
-
       <div id="quote-result" style="display:none;">
-        <div class="quote-card">
-          <div class="quote-label">Estimated Total</div>
-          <div class="quote-price"><span id="q-price">—</span> <sub>USD</sub></div>
-          <div class="quote-range" id="q-range">—</div>
-          <div class="quote-breakdown">
-            <div class="breakdown-item">
-              <div class="b-label">Material</div>
-              <div class="b-val" id="q-material">—</div>
+        <div class="quote-summary-card">
+          <div class="quote-summary-header">
+            <div>
+              <div class="quote-total-lbl">Estimated Total</div>
+              <div class="quote-total-amt" id="q-total">$0.00 <span style="font-size:1rem;font-weight:400;opacity:0.6;">AUD</span></div>
+              <div class="quote-ref-txt" id="q-ref"></div>
             </div>
-            <div class="breakdown-item">
-              <div class="b-label">Lead Time</div>
-              <div class="b-val" id="q-lead">2–4 days</div>
-            </div>
-            <div class="breakdown-item">
-              <div class="b-label">Resolution</div>
-              <div class="b-val" id="q-resolution">—</div>
-            </div>
-            <div class="breakdown-item">
-              <div class="b-label">Finish</div>
-              <div class="b-val" id="q-finish">—</div>
+            <div class="quote-lead-box">
+              <div class="ql">Est. Lead Time</div>
+              <div class="qv" id="q-lead">3–5 days</div>
             </div>
           </div>
+          <div class="quote-line-items" id="quote-items"></div>
         </div>
-
-        <div class="section-title">Cost Breakdown</div>
-        <table class="summary-table" id="summary-table"></table>
-
+        <p style="font-size:0.78rem;color:var(--sub);margin-bottom:4px;">
+          * This is an estimated quote. Final pricing will be confirmed after our team reviews your files.
+        </p>
         <div class="btn-row">
-          <button class="btn btn-ghost" id="btn-back-2">← Reconfigure</button>
-          <button class="btn btn-primary" id="btn-to-order">Proceed to Order →</button>
+          <button class="btn btn-ghost" id="btn-back-1">← Edit Files</button>
+          <button class="btn btn-primary" id="btn-to-details">Continue →</button>
         </div>
       </div>
     </div>
 
-    <!-- Stage 4: Order -->
-    <div class="stage" id="stage-4">
-      <div class="section-title">Shipping &amp; Contact</div>
-      <div class="form-row">
+    <!-- Stage 3: Details -->
+    <div class="stage" id="stage-3">
+      <div class="section-heading">Contact Information</div>
+      <div class="form-grid">
         <div class="form-group">
-          <label>Full Name</label>
-          <input type="text" placeholder="Jane Smith" />
+          <label>First Name *</label>
+          <input type="text" id="f-fname" placeholder="Jane" />
         </div>
         <div class="form-group">
-          <label>Email Address</label>
-          <input type="email" placeholder="jane@example.com" />
+          <label>Last Name *</label>
+          <input type="text" id="f-lname" placeholder="Smith" />
+        </div>
+        <div class="form-group">
+          <label>Email Address *</label>
+          <input type="email" id="f-email" placeholder="jane@example.com" />
+        </div>
+        <div class="form-group">
+          <label>Phone *</label>
+          <input type="tel" id="f-phone" placeholder="+61 4XX XXX XXX" />
+        </div>
+        <div class="form-group full">
+          <label>Company Name</label>
+          <input type="text" id="f-company" placeholder="Optional" />
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
+
+      <div class="divider"></div>
+      <div class="section-heading">Shipping & Notes</div>
+      <div class="form-grid">
+        <div class="form-group full">
           <label>Shipping Address</label>
-          <input type="text" placeholder="123 Main St" />
+          <input type="text" id="f-address" placeholder="123 Example St, Brisbane QLD 4000 (optional)" />
         </div>
-        <div class="form-group">
-          <label>City / State / ZIP</label>
-          <input type="text" placeholder="San Francisco, CA 94102" />
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group" style="flex:0 0 100%;">
-          <label>Notes for Printer (optional)</label>
-          <textarea placeholder="Any special requirements, color preferences, or questions..."></textarea>
+        <div class="form-group full">
+          <label>Comments / Special Requirements</label>
+          <textarea id="f-notes" placeholder="Any special requirements, colour preferences, deadlines, or questions…"></textarea>
         </div>
       </div>
-
-      <div class="section-title" style="margin-top:10px;">Order Summary</div>
-      <table class="summary-table" id="order-summary-table"></table>
-
+      <p class="required-note">* Required fields</p>
       <div class="btn-row">
-        <button class="btn btn-ghost" id="btn-back-3">← Back</button>
-        <button class="btn btn-success" id="btn-submit">Submit Order ✓</button>
+        <button class="btn btn-ghost" id="btn-back-2">← Back</button>
+        <button class="btn btn-primary" id="btn-to-confirm">Review Order →</button>
       </div>
     </div>
 
-  </div><!-- /plugin-body -->
-</div><!-- /plugin -->
+    <!-- Stage 4: Confirm -->
+    <div class="stage" id="stage-4">
+
+      <div id="confirm-view">
+        <div class="section-heading">Order Summary</div>
+        <div class="quote-summary-card" style="margin-bottom:20px;">
+          <div class="quote-summary-header">
+            <div>
+              <div class="quote-total-lbl">Estimated Total</div>
+              <div class="quote-total-amt" id="c-total">$0.00 <span style="font-size:1rem;font-weight:400;opacity:0.6;">AUD</span></div>
+            </div>
+            <div class="quote-lead-box">
+              <div class="ql">Lead Time</div>
+              <div class="qv" id="c-lead">3–5 days</div>
+            </div>
+          </div>
+          <div class="quote-line-items" id="confirm-items"></div>
+        </div>
+
+        <div class="section-heading">Your Details</div>
+        <div class="confirm-box" id="confirm-details"></div>
+
+        <div class="divider"></div>
+        <p style="font-size:0.8rem;color:var(--sub);line-height:1.6;">
+          By submitting this order you agree that Protoland may contact you to confirm details and pricing. Your files will be stored securely and are never shared with third parties.
+        </p>
+        <div class="btn-row">
+          <button class="btn btn-ghost" id="btn-back-3">← Edit Details</button>
+          <button class="btn btn-success" id="btn-submit">Submit Order &amp; Upload Files</button>
+        </div>
+      </div>
+
+      <!-- Submitting -->
+      <div class="center-state" id="submitting-view">
+        <div class="spin-ring"></div>
+        <h3>Uploading your files…</h3>
+        <p id="upload-progress-text">Preparing files for secure upload</p>
+      </div>
+
+      <!-- Success -->
+      <div class="center-state" id="success-view">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <h3>Order Submitted!</h3>
+        <p>Your files have been securely uploaded. Our team will review your order and be in touch within 1 business day to confirm pricing and next steps.</p>
+        <div class="order-ref-chip" id="success-ref"></div>
+        <p style="font-size:0.72rem;color:var(--muted);">Save your order reference above for tracking.</p>
+        <button class="btn btn-ghost" id="btn-new-order" style="margin-top:8px;">Start a New Order</button>
+      </div>
+
+    </div>
+
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ── Data ──────────────────────────────────────────────────────────────────────
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyjztPgz2jpT8JU7qFDl2UtL4BrLw0Knf1_N_yQITN6sLuqDSfyl9ajnEWfoeRQxufSqg/exec';
+
 const MATERIALS = [
-  { id:'pla',   name:'PLA',          desc:'Easy, versatile, eco-friendly',   color:'#4fffb0', tag:'FDM',  baseRate:0.08 },
-  { id:'petg',  name:'PETG',         desc:'Tough, chemical resistant',        color:'#38bdf8', tag:'FDM',  baseRate:0.10 },
-  { id:'abs',   name:'ABS',          desc:'Heat resistant, functional parts', color:'#fb923c', tag:'FDM',  baseRate:0.11 },
-  { id:'tpu',   name:'TPU / Flex',   desc:'Rubber-like, shock absorbing',     color:'#f472b6', tag:'FDM',  baseRate:0.15 },
-  { id:'resin', name:'SLA Resin',    desc:'Ultra-fine details, smooth surface',color:'#a78bfa', tag:'SLA',  baseRate:0.28 },
-  { id:'nylon', name:'Nylon SLS',    desc:'Strong, no supports needed',       color:'#facc15', tag:'SLS',  baseRate:0.35 },
+  { id:'fdm',      name:'FDM Standard',  tag:'FDM',     rate:0.08 },
+  { id:'abs',      name:'ABS-like',      tag:'SLA',     rate:0.22 },
+  { id:'nylon',    name:'Nylon',         tag:'SLS',     rate:0.32 },
+  { id:'hitemp',   name:'High Temp',     tag:'SLA',     rate:0.38 },
+  { id:'clear',    name:'Transparent',   tag:'SLA',     rate:0.30 },
+  { id:'rubber',   name:'Rubber-like',   tag:'PolyJet', rate:0.42 },
 ];
 
-const FINISH_NAMES = { '1':'Raw','1.15':'Lightly Cleaned','1.3':'Support Removed','1.5':'Sanded & Polished' };
-const LAYER_NAMES  = { '0.05':'0.05 mm — Ultra Fine','0.1':'0.10 mm — Fine','0.2':'0.20 mm — Standard','0.3':'0.30 mm — Draft' };
+const FINISHES = [
+  { id:'raw',      name:'Raw / As Printed', mult:1.00 },
+  { id:'clean',    name:'Support Removed',  mult:1.20 },
+  { id:'sanded',   name:'Sanded',           mult:1.40 },
+  { id:'polished', name:'Polished',         mult:1.65 },
+  { id:'painted',  name:'Painted',          mult:1.90 },
+];
 
-let state = { file: null, material: null, layerHeight: 0.1, infill: 50, finish: 1.15, qty: 1, price: 0 };
+const LEAD_TIMES = {
+  fdm:'2–4 days', abs:'3–5 days', nylon:'4–6 days',
+  hitemp:'4–6 days', clear:'3–5 days', rubber:'5–7 days'
+};
 
-// ── Build material cards ───────────────────────────────────────────────────────
-const grid = document.getElementById('material-grid');
-MATERIALS.forEach(m => {
-  const card = document.createElement('div');
-  card.className = 'material-card';
-  card.style.setProperty('--mat-color', m.color);
-  card.dataset.id = m.id;
-  card.innerHTML = `
-    <div class="material-dot"></div>
-    <div class="material-name">${m.name}</div>
-    <div class="material-desc">${m.desc}</div>
-    <span class="material-tag">${m.tag}</span>
-  `;
-  card.addEventListener('click', () => {
-    document.querySelectorAll('.material-card').forEach(c => c.classList.remove('selected'));
-    card.classList.add('selected');
-    state.material = m;
-  });
-  grid.appendChild(card);
-});
+const ALLOWED_EXT = ['.stl','.obj','.3mf','.step','.stp'];
 
-// ── Drag & drop upload ─────────────────────────────────────────────────────────
-const zone = document.getElementById('upload-zone');
-const input = document.getElementById('file-input');
+let files = [];
+let quoteData = null;
+let orderRef = '';
 
-zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-zone.addEventListener('drop', e => {
-  e.preventDefault(); zone.classList.remove('drag-over');
-  const f = e.dataTransfer.files[0];
-  if (f) handleFile(f);
-});
-input.addEventListener('change', () => { if (input.files[0]) handleFile(input.files[0]); });
+const ext  = f => f.name.slice(f.name.lastIndexOf('.')).toLowerCase();
+const fmtSz = b => b > 1048576 ? (b/1048576).toFixed(1)+' MB' : (b/1024).toFixed(1)+' KB';
+const genRef = () => 'PLQ-' + Date.now().toString(36).toUpperCase();
 
-function handleFile(f) {
-  const allowed = ['.stl','.obj','.3mf','.step','.stp'];
-  const ext = f.name.slice(f.name.lastIndexOf('.')).toLowerCase();
-  if (!allowed.includes(ext)) { showToast('⚠ Unsupported file type', true); return; }
-  state.file = f;
-  document.getElementById('fname').textContent = f.name;
-  document.getElementById('fmeta').textContent = `${(f.size/1024).toFixed(1)} KB  ·  ${ext.toUpperCase()}`;
-  document.getElementById('file-info').classList.add('visible');
-  document.getElementById('btn-to-config').disabled = false;
-}
-
-document.getElementById('file-remove').addEventListener('click', () => {
-  state.file = null;
-  input.value = '';
-  document.getElementById('file-info').classList.remove('visible');
-  document.getElementById('btn-to-config').disabled = true;
-});
-
-// ── Slider ────────────────────────────────────────────────────────────────────
-const infillSlider = document.getElementById('infill');
-function updateSlider() {
-  const val = infillSlider.value;
-  const pct = ((val - infillSlider.min) / (infillSlider.max - infillSlider.min)) * 100;
-  infillSlider.style.setProperty('--pct', pct + '%');
-  document.getElementById('infill-label').textContent = val + '%';
-  state.infill = parseInt(val);
-}
-infillSlider.addEventListener('input', updateSlider);
-updateSlider();
-
-// ── Stage navigation ──────────────────────────────────────────────────────────
-function goTo(n) {
-  document.querySelectorAll('.stage').forEach((s,i) => s.classList.toggle('active', i === n-1));
-  document.querySelectorAll('.step-tab').forEach((t,i) => {
-    t.classList.remove('active','done');
-    if (i+1 === n) t.classList.add('active');
-    else if (i+1 < n) t.classList.add('done');
-  });
-  document.getElementById('progress-bar').style.width = (n * 25) + '%';
-}
-
-document.getElementById('btn-to-config').addEventListener('click', () => goTo(2));
-document.getElementById('btn-back-1').addEventListener('click', () => goTo(1));
-document.getElementById('btn-back-2').addEventListener('click', () => goTo(2));
-document.getElementById('btn-back-3').addEventListener('click', () => goTo(3));
-
-document.getElementById('btn-get-quote').addEventListener('click', () => {
-  if (!state.material) { showToast('⚠ Please select a material', true); return; }
-  state.layerHeight = parseFloat(document.getElementById('layer-height').value);
-  state.finish      = parseFloat(document.getElementById('finish').value);
-  state.qty         = Math.max(1, parseInt(document.getElementById('quantity').value) || 1);
-  goTo(3);
-  computeQuote();
-});
-
-document.getElementById('btn-to-order').addEventListener('click', () => {
-  goTo(4);
-  buildOrderSummary();
-});
-document.getElementById('btn-submit').addEventListener('click', () => {
-  showToast('🎉 Order submitted! We\'ll confirm via email.');
-  setTimeout(() => goTo(1), 2500);
-});
-
-// ── Pricing ───────────────────────────────────────────────────────────────────
-function computeQuote() {
-  document.getElementById('analyzing').classList.add('visible');
-  document.getElementById('quote-result').style.display = 'none';
-
-  setTimeout(() => {
-    const m     = state.material;
-    const size  = state.file ? Math.max(10, state.file.size / 1024) : 80; // proxy for volume (KB)
-    const vol   = size * 0.4; // simulated cm³
-    const layerMult  = { '0.05':1.5, '0.1':1.15, '0.2':1.0, '0.3':0.85 }[String(state.layerHeight)] || 1;
-    const infillMult = 0.7 + (state.infill / 100) * 0.6;
-    const setupFee   = 4.5;
-    const materialCost = vol * m.baseRate * infillMult * layerMult;
-    const finishCost   = (materialCost + setupFee) * (state.finish - 1);
-    const unitPrice    = setupFee + materialCost + finishCost;
-    const qtyDiscount  = state.qty >= 10 ? 0.88 : state.qty >= 5 ? 0.93 : 1.0;
-    const total        = unitPrice * state.qty * qtyDiscount;
-    state.price = total;
-
-    const lo = (total * 0.92).toFixed(2), hi = (total * 1.08).toFixed(2);
-
-    document.getElementById('q-price').textContent = '$' + total.toFixed(2);
-    document.getElementById('q-range').textContent = `Estimated range: $${lo} – $${hi}`;
-    document.getElementById('q-material').textContent = m.name + ' (' + m.tag + ')';
-    document.getElementById('q-resolution').textContent = LAYER_NAMES[String(state.layerHeight)].split('—')[0].trim();
-    document.getElementById('q-finish').textContent = FINISH_NAMES[String(state.finish)];
-
-    // Lead time by material
-    const leads = { pla:'2–3 days', petg:'2–4 days', abs:'3–4 days', tpu:'3–5 days', resin:'4–6 days', nylon:'5–7 days' };
-    document.getElementById('q-lead').textContent = leads[m.id] || '3–5 days';
-
-    const rows = [
-      ['Material cost', `$${materialCost.toFixed(2)}`],
-      ['Setup fee', `$${setupFee.toFixed(2)}`],
-      ['Finish treatment', `$${finishCost.toFixed(2)}`],
-      ['Qty × ' + state.qty + (qtyDiscount < 1 ? ' (discount applied)':''), `× ${state.qty}`],
-      ['TOTAL', `$${total.toFixed(2)}`],
-    ];
-    const tbl = document.getElementById('summary-table');
-    tbl.innerHTML = rows.map((r,i) => `
-      <tr class="${i === rows.length-1 ? 'total-row' : ''}">
-        <td>${r[0]}</td><td>${r[1]}</td>
-      </tr>`).join('');
-
-    document.getElementById('analyzing').classList.remove('visible');
-    document.getElementById('quote-result').style.display = 'block';
-  }, 1800);
-}
-
-function buildOrderSummary() {
-  const rows = [
-    ['File', state.file.name],
-    ['Material', state.material.name],
-    ['Finish', FINISH_NAMES[String(state.finish)]],
-    ['Quantity', state.qty],
-    ['Total', `$${state.price.toFixed(2)}`],
-  ];
-  document.getElementById('order-summary-table').innerHTML = rows.map((r,i) => `
-    <tr class="${i === rows.length-1 ? 'total-row':''}">
-      <td>${r[0]}</td><td>${r[1]}</td>
-    </tr>`).join('');
-}
-
-// ── Toast ─────────────────────────────────────────────────────────────────────
 function showToast(msg, warn=false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.style.borderColor = warn ? 'var(--warn)' : 'var(--accent2)';
-  t.style.color = warn ? 'var(--warn)' : 'var(--accent2)';
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3200);
+  t.className = 'toast' + (warn ? ' warn' : '') + ' show';
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function goTo(n) {
+  document.querySelectorAll('.stage').forEach((s,i) => s.classList.toggle('active', i===n-1));
+  document.querySelectorAll('.step-tab').forEach((t,i) => {
+    t.classList.remove('active','done');
+    if (i+1===n) t.classList.add('active');
+    else if (i+1<n) t.classList.add('done');
+  });
+  document.getElementById('progress').style.width = (n*25)+'%';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function addFiles(list) {
+  Array.from(list).forEach(f => {
+    if (!ALLOWED_EXT.includes(ext(f))) { showToast('Unsupported format: ' + f.name, true); return; }
+    if (files.find(x => x.file.name===f.name && x.file.size===f.size)) return;
+    files.push({ file:f, material:MATERIALS[0], finish:FINISHES[0], quantity:1 });
+  });
+  renderFiles();
+}
+
+function removeFile(idx) { files.splice(idx,1); renderFiles(); }
+
+function renderFiles() {
+  const list = document.getElementById('files-list');
+  list.innerHTML = '';
+  files.forEach((item, idx) => {
+    const div = document.createElement('div');
+    div.className = 'file-item';
+    div.innerHTML = `
+      <div class="file-item-header">
+        <div class="file-thumb">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14,2 14,8 20,8"/>
+          </svg>
+        </div>
+        <div class="file-meta">
+          <div class="fname">${item.file.name}</div>
+          <div class="fsize">${fmtSz(item.file.size)} &nbsp;·&nbsp; ${ext(item.file).toUpperCase()}</div>
+        </div>
+        <button class="file-remove-btn" data-idx="${idx}" title="Remove">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="file-item-config">
+        <div class="ctrl-group">
+          <label>Material</label>
+          <div class="select-wrap">
+            <select class="mat-sel" data-idx="${idx}">
+              ${MATERIALS.map(m=>`<option value="${m.id}" ${m.id===item.material.id?'selected':''}>${m.name} (${m.tag})</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="ctrl-group">
+          <label>Finish</label>
+          <div class="select-wrap">
+            <select class="fin-sel" data-idx="${idx}">
+              ${FINISHES.map(f=>`<option value="${f.id}" ${f.id===item.finish.id?'selected':''}>${f.name}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="ctrl-group">
+          <label>Qty</label>
+          <input type="number" class="qty-inp" data-idx="${idx}" value="${item.quantity}" min="1" max="999" />
+        </div>
+      </div>`;
+    list.appendChild(div);
+  });
+
+  list.querySelectorAll('.file-remove-btn').forEach(b => b.addEventListener('click', () => removeFile(+b.dataset.idx)));
+  list.querySelectorAll('.mat-sel').forEach(s => s.addEventListener('change', () => { files[+s.dataset.idx].material = MATERIALS.find(m=>m.id===s.value); }));
+  list.querySelectorAll('.fin-sel').forEach(s => s.addEventListener('change', () => { files[+s.dataset.idx].finish = FINISHES.find(f=>f.id===s.value); }));
+  list.querySelectorAll('.qty-inp').forEach(i => i.addEventListener('change', () => {
+    files[+i.dataset.idx].quantity = Math.max(1,parseInt(i.value)||1);
+    i.value = files[+i.dataset.idx].quantity;
+  }));
+
+  const has = files.length > 0;
+  document.getElementById('upload-zone').style.display = has ? 'none' : '';
+  document.getElementById('add-more-btn').style.display = has ? 'flex' : 'none';
+  document.getElementById('btn-to-quote').disabled = !has;
+}
+
+// Upload events
+const zone = document.getElementById('upload-zone');
+const fi   = document.getElementById('file-input');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); addFiles(e.dataTransfer.files); });
+fi.addEventListener('change', () => { addFiles(fi.files); fi.value=''; });
+document.getElementById('add-more-input').addEventListener('change', function() { addFiles(this.files); this.value=''; });
+
+// Quote calc
+function calcQuote() {
+  const items = files.map(item => {
+    const vol = Math.max(10, item.file.size/1024) * 0.4;
+    const cost = (5.00 + vol * item.material.rate * item.finish.mult);
+    const disc = item.quantity >= 10 ? 0.88 : item.quantity >= 5 ? 0.93 : 1.0;
+    const lineTotal = cost * item.quantity * disc;
+    return { filename:item.file.name, material:item.material.name+' ('+item.material.tag+')', finish:item.finish.name, quantity:item.quantity, lineTotal, matId:item.material.id };
+  });
+  const total = items.reduce((s,i)=>s+i.lineTotal, 0);
+  const leadTime = items.map(i=>LEAD_TIMES[i.matId]||'3–5 days').sort((a,b)=>parseInt(b)-parseInt(a))[0];
+  return { items, total, leadTime };
+}
+
+function buildLineItemsHTML(data) {
+  return `<div class="quote-line-items">` +
+    data.items.map(i=>`
+      <div class="quote-line-item">
+        <div class="qli-left">
+          <div class="qli-name">${i.filename}</div>
+          <div class="qli-meta">${i.material} &nbsp;·&nbsp; ${i.finish} &nbsp;·&nbsp; Qty ${i.quantity}</div>
+        </div>
+        <div class="qli-price">$${i.lineTotal.toFixed(2)}</div>
+      </div>`).join('') +
+    `</div>
+    <div class="quote-total-row">
+      <div class="label">Estimated Total</div>
+      <div class="amount">$${data.total.toFixed(2)} AUD</div>
+    </div>`;
+}
+
+// Navigation
+document.getElementById('btn-to-quote').addEventListener('click', () => {
+  orderRef = genRef();
+  goTo(2);
+  document.getElementById('analyzing').classList.add('visible');
+  document.getElementById('quote-result').style.display = 'none';
+  setTimeout(() => {
+    quoteData = calcQuote();
+    document.getElementById('q-total').innerHTML = `$${quoteData.total.toFixed(2)} <span style="font-size:1rem;font-weight:400;opacity:0.6;">AUD</span>`;
+    document.getElementById('q-ref').textContent = 'Reference: ' + orderRef;
+    document.getElementById('q-lead').textContent = quoteData.leadTime;
+    document.getElementById('quote-items').innerHTML = buildLineItemsHTML(quoteData);
+    document.getElementById('analyzing').classList.remove('visible');
+    document.getElementById('quote-result').style.display = 'block';
+  }, 1500);
+});
+
+document.getElementById('btn-back-1').addEventListener('click', () => goTo(1));
+document.getElementById('btn-to-details').addEventListener('click', () => goTo(3));
+document.getElementById('btn-back-2').addEventListener('click', () => goTo(2));
+
+document.getElementById('btn-to-confirm').addEventListener('click', () => {
+  const fname = document.getElementById('f-fname').value.trim();
+  const lname = document.getElementById('f-lname').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  if (!fname || !lname || !email || !phone) { showToast('Please fill in all required fields', true); return; }
+
+  document.getElementById('c-total').innerHTML = `$${quoteData.total.toFixed(2)} <span style="font-size:1rem;font-weight:400;opacity:0.6;">AUD</span>`;
+  document.getElementById('c-lead').textContent = quoteData.leadTime;
+  document.getElementById('confirm-items').innerHTML = buildLineItemsHTML(quoteData);
+
+  const company = document.getElementById('f-company').value;
+  const address = document.getElementById('f-address').value;
+  const notes   = document.getElementById('f-notes').value;
+  document.getElementById('confirm-details').innerHTML =
+    `<strong>${fname} ${lname}</strong><br>${email} &nbsp;·&nbsp; ${phone}` +
+    (company ? `<br>${company}` : '') +
+    (address ? `<br>${address}` : '') +
+    (notes ? `<br><span style="color:var(--sub)">Notes: ${notes}</span>` : '');
+  goTo(4);
+});
+
+document.getElementById('btn-back-3').addEventListener('click', () => goTo(3));
+
+// Submit
+document.getElementById('btn-submit').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  document.getElementById('confirm-view').style.display = 'none';
+  document.getElementById('submitting-view').classList.add('visible');
+  const progTxt = document.getElementById('upload-progress-text');
+
+  try {
+    const filePayloads = [];
+    for (let i=0; i<files.length; i++) {
+      progTxt.textContent = `Reading file ${i+1} of ${files.length}: ${files[i].file.name}`;
+      filePayloads.push({ name: files[i].file.name, data: await fileToBase64(files[i].file) });
+    }
+    progTxt.textContent = 'Sending to server…';
+
+    const fname = document.getElementById('f-fname').value.trim();
+    const lname = document.getElementById('f-lname').value.trim();
+
+    const payload = {
+      order_ref:    orderRef,
+      client_name:  fname + ' ' + lname,
+      client_email: document.getElementById('f-email').value.trim(),
+      phone:        document.getElementById('f-phone').value.trim(),
+      company:      document.getElementById('f-company').value.trim(),
+      address:      document.getElementById('f-address').value.trim(),
+      notes:        document.getElementById('f-notes').value.trim(),
+      price:        '$' + quoteData.total.toFixed(2) + ' AUD',
+      lead_time:    quoteData.leadTime,
+      items: files.map((item,idx) => ({
+        filename: item.file.name,
+        material: item.material.name + ' (' + item.material.tag + ')',
+        finish:   item.finish.name,
+        quantity: item.quantity,
+        price:    '$' + quoteData.items[idx].lineTotal.toFixed(2),
+      })),
+      files: filePayloads,
+    };
+
+    const resp = await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify(payload) });
+    const result = await resp.json();
+
+    if (result.success) {
+      document.getElementById('submitting-view').classList.remove('visible');
+      document.getElementById('success-view').classList.add('visible');
+      document.getElementById('success-ref').textContent = orderRef;
+    } else {
+      throw new Error(result.error || 'Server error');
+    }
+  } catch(err) {
+    console.error(err);
+    document.getElementById('submitting-view').classList.remove('visible');
+    document.getElementById('confirm-view').style.display = 'block';
+    btn.disabled = false;
+    showToast('Submission failed. Please try again.', true);
+  }
+});
+
+document.getElementById('btn-new-order').addEventListener('click', () => {
+  files = []; quoteData = null; orderRef = '';
+  document.getElementById('files-list').innerHTML = '';
+  document.getElementById('upload-zone').style.display = '';
+  document.getElementById('add-more-btn').style.display = 'none';
+  document.getElementById('btn-to-quote').disabled = true;
+  document.getElementById('success-view').classList.remove('visible');
+  document.getElementById('confirm-view').style.display = 'block';
+  document.getElementById('btn-submit').disabled = false;
+  ['f-fname','f-lname','f-email','f-phone','f-company','f-address','f-notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  goTo(1);
+});
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
 }
 </script>
 </body>
