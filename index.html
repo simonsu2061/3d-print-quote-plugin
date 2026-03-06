@@ -334,7 +334,7 @@ body {
         All models uploaded to Protoland are secure and confidential. You retain all rights to your models.
       </div>
       <div class="upload-zone" id="upload-zone">
-        <input type="file" id="file-input" accept=".stl,.obj,.3mf,.step,.stp" multiple />
+        <input type="file" id="file-input" accept=".stl,.obj,.3mf" multiple />
         <div class="upload-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -344,15 +344,14 @@ body {
         <h3>Drop files here or <span class="browse-link">browse</span></h3>
         <p>Select one or multiple 3D model files at once.</p>
         <div class="formats">
-          <span class="fmt-tag">.STL</span><span class="fmt-tag">.OBJ</span>
-          <span class="fmt-tag">.3MF</span><span class="fmt-tag">.STEP</span><span class="fmt-tag">.STP</span>
+          <span class="fmt-tag">.STL</span><span class="fmt-tag">.OBJ</span><span class="fmt-tag">.3MF</span>
         </div>
       </div>
       <div class="files-list" id="files-list"></div>
       <button class="add-file-btn" id="add-more-btn" style="display:none;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add more files
-        <input type="file" id="add-more-input" accept=".stl,.obj,.3mf,.step,.stp" multiple />
+        <input type="file" id="add-more-input" accept=".stl,.obj,.3mf" multiple />
       </button>
       <div class="error-banner" id="quote-error">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -467,65 +466,62 @@ body {
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyjztPgz2jpT8JU7qFDl2UtL4BrLw0Knf1_N_yQITN6sLuqDSfyl9ajnEWfoeRQxufSqg/exec';
 
+// ── Helpers (defined first so all functions below can use them) ───────────────
+const getExt  = f => f.name.slice(f.name.lastIndexOf('.')).toLowerCase();
+const fmtSz   = b => b > 1048576 ? (b/1048576).toFixed(1)+' MB' : (b/1024).toFixed(1)+' KB';
+const fmtVol  = v => v >= 1000 ? (v/1000).toFixed(2)+' cm³' : v.toFixed(1)+' mm³';
+const fmtMm   = v => v.toFixed(1)+' mm';
+const genRef  = () => 'PLQ-' + Date.now().toString(36).toUpperCase();
+
 // ── Geometry parsers ──────────────────────────────────────────────────────────
 
-// Signed volume of a triangle (used for mesh volume via divergence theorem)
 function signedTriangleVolume(ax,ay,az, bx,by,bz, cx,cy,cz) {
   return (ax*(by*cz - bz*cy) + ay*(bz*cx - bx*cz) + az*(bx*cy - by*cx)) / 6.0;
 }
 
-// Parse binary STL → { volume_mm3, bbox: {x,y,z} in mm }
 async function parseSTL(file) {
-  const buf    = await file.arrayBuffer();
-  const view   = new DataView(buf);
-  const nTri   = view.getUint32(80, true);
+  const buf  = await file.arrayBuffer();
+  const view = new DataView(buf);
+  const nTri = view.getUint32(80, true);
 
-  // Detect ASCII STL (starts with "solid")
-  const header = new Uint8Array(buf, 0, 5);
-  const isASCII = String.fromCharCode(...header) === 'solid';
+  // Detect ASCII vs binary
+  const isASCII = new TextDecoder().decode(new Uint8Array(buf, 0, 5)) === 'solid'
+                  && !(buf.byteLength === 84 + nTri * 50);
 
   let volume = 0;
   let minX=Infinity, minY=Infinity, minZ=Infinity;
   let maxX=-Infinity, maxY=-Infinity, maxZ=-Infinity;
 
   if (!isASCII && nTri > 0 && buf.byteLength === 84 + nTri * 50) {
-    // Binary STL
     for (let i = 0; i < nTri; i++) {
       const base = 84 + i * 50;
-      // Skip 12-byte normal, then 3 vertices × 12 bytes
-      const ax = view.getFloat32(base+12, true), ay = view.getFloat32(base+16, true), az = view.getFloat32(base+20, true);
-      const bx = view.getFloat32(base+24, true), by = view.getFloat32(base+28, true), bz = view.getFloat32(base+32, true);
-      const cx = view.getFloat32(base+36, true), cy = view.getFloat32(base+40, true), cz = view.getFloat32(base+44, true);
+      const ax = view.getFloat32(base+12,true), ay = view.getFloat32(base+16,true), az = view.getFloat32(base+20,true);
+      const bx = view.getFloat32(base+24,true), by = view.getFloat32(base+28,true), bz = view.getFloat32(base+32,true);
+      const cx = view.getFloat32(base+36,true), cy = view.getFloat32(base+40,true), cz = view.getFloat32(base+44,true);
       volume += signedTriangleVolume(ax,ay,az, bx,by,bz, cx,cy,cz);
       minX=Math.min(minX,ax,bx,cx); maxX=Math.max(maxX,ax,bx,cx);
       minY=Math.min(minY,ay,by,cy); maxY=Math.max(maxY,ay,by,cy);
       minZ=Math.min(minZ,az,bz,cz); maxZ=Math.max(maxZ,az,bz,cz);
     }
   } else {
-    // ASCII STL
-    const text   = await file.text();
-    const vRe    = /vertex\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)/g;
-    const verts  = [];
+    const text  = await file.text();
+    const vRe   = /vertex\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)/g;
+    const verts = [];
     let m;
     while ((m = vRe.exec(text)) !== null) {
       verts.push([parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3])]);
     }
     for (let i = 0; i+2 < verts.length; i+=3) {
-      const [ax,ay,az] = verts[i], [bx,by,bz] = verts[i+1], [cx,cy,cz] = verts[i+2];
+      const [ax,ay,az]=verts[i], [bx,by,bz]=verts[i+1], [cx,cy,cz]=verts[i+2];
       volume += signedTriangleVolume(ax,ay,az, bx,by,bz, cx,cy,cz);
       minX=Math.min(minX,ax,bx,cx); maxX=Math.max(maxX,ax,bx,cx);
       minY=Math.min(minY,ay,by,cy); maxY=Math.max(maxY,ay,by,cy);
       minZ=Math.min(minZ,az,bz,cz); maxZ=Math.max(maxZ,az,bz,cz);
     }
   }
-
-  return {
-    volume_mm3: Math.abs(volume),
-    bbox: { x: maxX-minX, y: maxY-minY, z: maxZ-minZ },
-  };
+  return { volume_mm3: Math.abs(volume), bbox: { x:maxX-minX, y:maxY-minY, z:maxZ-minZ } };
 }
 
-// Parse OBJ → { volume_mm3, bbox }
 async function parseOBJ(file) {
   const text  = await file.text();
   const lines = text.split('\n');
@@ -535,9 +531,9 @@ async function parseOBJ(file) {
   let maxX=-Infinity, maxY=-Infinity, maxZ=-Infinity;
 
   for (const line of lines) {
-    const parts = line.trim().split(/\s+/);
-    if (parts[0] === 'v') {
-      const x=parseFloat(parts[1]), y=parseFloat(parts[2]), z=parseFloat(parts[3]);
+    const p = line.trim().split(/\s+/);
+    if (p[0] === 'v') {
+      const x=parseFloat(p[1]), y=parseFloat(p[2]), z=parseFloat(p[3]);
       verts.push([x,y,z]);
       minX=Math.min(minX,x); maxX=Math.max(maxX,x);
       minY=Math.min(minY,y); maxY=Math.max(maxY,y);
@@ -545,52 +541,39 @@ async function parseOBJ(file) {
     }
   }
   for (const line of lines) {
-    const parts = line.trim().split(/\s+/);
-    if (parts[0] === 'f') {
-      // Fan triangulation for polygonal faces
-      const idx = parts.slice(1).map(p => parseInt(p.split('/')[0]) - 1);
+    const p = line.trim().split(/\s+/);
+    if (p[0] === 'f') {
+      const idx = p.slice(1).map(s => parseInt(s.split('/')[0]) - 1);
       for (let i = 1; i+1 < idx.length; i++) {
-        const [ax,ay,az] = verts[idx[0]];
-        const [bx,by,bz] = verts[idx[i]];
-        const [cx,cy,cz] = verts[idx[i+1]];
+        const [ax,ay,az]=verts[idx[0]], [bx,by,bz]=verts[idx[i]], [cx,cy,cz]=verts[idx[i+1]];
         volume += signedTriangleVolume(ax,ay,az, bx,by,bz, cx,cy,cz);
       }
     }
   }
-
-  return {
-    volume_mm3: Math.abs(volume),
-    bbox: { x: maxX-minX, y: maxY-minY, z: maxZ-minZ },
-  };
+  return { volume_mm3: Math.abs(volume), bbox: { x:maxX-minX, y:maxY-minY, z:maxZ-minZ } };
 }
 
-// Parse 3MF (ZIP containing XML) → { volume_mm3, bbox }
 async function parse3MF(file) {
-  // 3MF is a ZIP — use DecompressionStream on each entry via manual ZIP parsing
   const buf   = await file.arrayBuffer();
   const bytes = new Uint8Array(buf);
-
-  // Find the model XML by scanning ZIP local file headers (signature 0x04034b50)
   let xmlText = null;
   let offset  = 0;
+
   while (offset < bytes.length - 4) {
     if (bytes[offset]===0x50 && bytes[offset+1]===0x4B &&
         bytes[offset+2]===0x03 && bytes[offset+3]===0x04) {
-      const compression  = bytes[offset+8]  | (bytes[offset+9]  << 8);
-      const compSize     = bytes[offset+18] | (bytes[offset+19] << 8) | (bytes[offset+20] << 16) | (bytes[offset+21] << 24);
-      const uncompSize   = bytes[offset+22] | (bytes[offset+23] << 8) | (bytes[offset+24] << 16) | (bytes[offset+25] << 24);
-      const fnLen        = bytes[offset+26] | (bytes[offset+27] << 8);
-      const extraLen     = bytes[offset+28] | (bytes[offset+29] << 8);
-      const dataStart    = offset + 30 + fnLen + extraLen;
-      const filename     = new TextDecoder().decode(bytes.subarray(offset+30, offset+30+fnLen));
+      const compression = bytes[offset+8]  | (bytes[offset+9]  << 8);
+      const compSize    = bytes[offset+18] | (bytes[offset+19] << 8) | (bytes[offset+20] << 16) | (bytes[offset+21] << 24);
+      const fnLen       = bytes[offset+26] | (bytes[offset+27] << 8);
+      const extraLen    = bytes[offset+28] | (bytes[offset+29] << 8);
+      const dataStart   = offset + 30 + fnLen + extraLen;
+      const filename    = new TextDecoder().decode(bytes.subarray(offset+30, offset+30+fnLen));
 
       if (filename.endsWith('.model')) {
         const compData = bytes.subarray(dataStart, dataStart + compSize);
         if (compression === 0) {
-          // Stored uncompressed
           xmlText = new TextDecoder().decode(compData);
         } else if (compression === 8) {
-          // Deflate compressed
           try {
             const ds     = new DecompressionStream('deflate-raw');
             const writer = ds.writable.getWriter();
@@ -612,26 +595,19 @@ async function parse3MF(file) {
         if (xmlText) break;
       }
       offset = dataStart + compSize;
-    } else {
-      offset++;
-    }
+    } else { offset++; }
   }
 
   if (!xmlText) throw new Error('Could not read 3MF model data');
 
-  // Parse vertices and triangles from XML
-  const parser  = new DOMParser();
-  const doc     = parser.parseFromString(xmlText, 'application/xml');
-  const meshes  = doc.querySelectorAll('mesh');
-
-  let volume = 0;
+  const doc   = new DOMParser().parseFromString(xmlText, 'application/xml');
+  const meshes = doc.querySelectorAll('mesh');
+  let volume  = 0;
   let minX=Infinity, minY=Infinity, minZ=Infinity;
   let maxX=-Infinity, maxY=-Infinity, maxZ=-Infinity;
 
   for (const mesh of meshes) {
-    const vertNodes = mesh.querySelectorAll('vertices vertex');
-    const triNodes  = mesh.querySelectorAll('triangles triangle');
-    const verts     = Array.from(vertNodes).map(v => [
+    const verts = Array.from(mesh.querySelectorAll('vertices vertex')).map(v => [
       parseFloat(v.getAttribute('x')),
       parseFloat(v.getAttribute('y')),
       parseFloat(v.getAttribute('z')),
@@ -641,34 +617,25 @@ async function parse3MF(file) {
       minY=Math.min(minY,v[1]); maxY=Math.max(maxY,v[1]);
       minZ=Math.min(minZ,v[2]); maxZ=Math.max(maxZ,v[2]);
     }
-    for (const tri of triNodes) {
+    for (const tri of mesh.querySelectorAll('triangles triangle')) {
       const a=parseInt(tri.getAttribute('v1')), b=parseInt(tri.getAttribute('v2')), c=parseInt(tri.getAttribute('v3'));
       const [ax,ay,az]=verts[a], [bx,by,bz]=verts[b], [cx,cy,cz]=verts[c];
       volume += signedTriangleVolume(ax,ay,az, bx,by,bz, cx,cy,cz);
     }
   }
-
-  return {
-    volume_mm3: Math.abs(volume),
-    bbox: { x: maxX-minX, y: maxY-minY, z: maxZ-minZ },
-  };
+  return { volume_mm3: Math.abs(volume), bbox: { x:maxX-minX, y:maxY-minY, z:maxZ-minZ } };
 }
 
-// Dispatch to correct parser by extension
 async function analyseGeometry(file) {
-  const e = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
-  if (e === '.stl')              return await parseSTL(file);
-  if (e === '.obj')              return await parseOBJ(file);
-  if (e === '.3mf')              return await parse3MF(file);
-  // STEP files: fall back to file size proxy
-  return { volume_mm3: Math.max(10, file.size / 1024) * 0.4, bbox: null };
+  const e = getExt(file);
+  if (e === '.stl') return await parseSTL(file);
+  if (e === '.obj') return await parseOBJ(file);
+  if (e === '.3mf') return await parse3MF(file);
+  throw new Error('Unsupported format');
 }
 
-// Format mm³ → cm³ nicely
-const fmtVol = v => v >= 1000 ? (v/1000).toFixed(2)+' cm³' : v.toFixed(1)+' mm³';
-const fmtMm  = v => v.toFixed(1)+' mm';
-
-// Materials and finishes are display-only — no rates here
+// ── Data ──────────────────────────────────────────────────────────────────────
+// Materials and finishes — display only, no rates (rates live in Google Sheet)
 const MATERIALS = [
   { id:'fdm',    name:'FDM Standard',  tag:'FDM'     },
   { id:'abs',    name:'ABS-like',      tag:'SLA'     },
@@ -684,17 +651,13 @@ const FINISHES = [
   { id:'polished', name:'Polished'         },
   { id:'painted',  name:'Painted'          },
 ];
-
-const ALLOWED_EXT = ['.stl','.obj','.3mf','.step','.stp'];
+const ALLOWED_EXT = ['.stl','.obj','.3mf'];
 
 let files     = [];
 let quoteData = null;
 let orderRef  = '';
 
-const ext    = f => f.name.slice(f.name.lastIndexOf('.')).toLowerCase();
-const fmtSz  = b => b > 1048576 ? (b/1048576).toFixed(1)+' MB' : (b/1024).toFixed(1)+' KB';
-const genRef = () => 'PLQ-' + Date.now().toString(36).toUpperCase();
-
+// ── UI helpers ────────────────────────────────────────────────────────────────
 function showToast(msg, warn=false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -714,29 +677,32 @@ function goTo(n) {
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
+// ── File handling ─────────────────────────────────────────────────────────────
 async function addFiles(list) {
   const newFiles = Array.from(list).filter(f => {
-    if (!ALLOWED_EXT.includes(ext(f))) { showToast('Unsupported format: ' + f.name, true); return false; }
+    if (!ALLOWED_EXT.includes(getExt(f))) { showToast('Unsupported format: ' + f.name, true); return false; }
     if (files.find(x => x.file.name===f.name && x.file.size===f.size)) return false;
     return true;
   });
   if (!newFiles.length) return;
 
-  // Add with geometry=null (analysing state) and render immediately
-  newFiles.forEach(f => files.push({ file:f, material:MATERIALS[0], finish:FINISHES[0], quantity:1, geometry:null, analysing:true }));
+  // Push entries immediately so UI responds right away
+  newFiles.forEach(f => files.push({
+    file:f, material:MATERIALS[0], finish:FINISHES[0], quantity:1,
+    geometry:null, analysing:true, geoError:false
+  }));
   renderFiles();
 
-  // Analyse geometry in parallel
+  // Analyse geometry for each new file
   await Promise.all(newFiles.map(async f => {
     const entry = files.find(x => x.file === f);
     if (!entry) return;
     try {
-      entry.geometry   = await analyseGeometry(f);
-      entry.analysing  = false;
+      entry.geometry  = await analyseGeometry(f);
+      entry.analysing = false;
     } catch(e) {
-      entry.geometry   = null;
-      entry.analysing  = false;
-      entry.geoError   = true;
+      entry.analysing = false;
+      entry.geoError  = true;
     }
     renderFiles();
   }));
@@ -748,6 +714,14 @@ function renderFiles() {
   const list = document.getElementById('files-list');
   list.innerHTML = '';
   files.forEach((item, idx) => {
+    const geoTag = item.analysing
+      ? '<span style="color:var(--blue);font-size:0.68rem;">analysing geometry…</span>'
+      : item.geoError || !item.geometry
+        ? '<span style="color:var(--muted);font-size:0.68rem;">geometry unavailable</span>'
+        : `<span style="color:var(--sub);font-size:0.68rem;">`
+          + `${fmtMm(item.geometry.bbox.x)} × ${fmtMm(item.geometry.bbox.y)} × ${fmtMm(item.geometry.bbox.z)}`
+          + ` &nbsp;·&nbsp; ${fmtVol(item.geometry.volume_mm3)}</span>`;
+
     const div = document.createElement('div');
     div.className = 'file-item';
     div.innerHTML = `
@@ -760,20 +734,7 @@ function renderFiles() {
         </div>
         <div class="file-meta">
           <div class="fname">${item.file.name}</div>
-          <div class="fsize">
-            ${fmtSz(item.file.size)} &nbsp;·&nbsp; ${ext(item.file).toUpperCase()}
-            ${item.analysing
-              ? '&nbsp;·&nbsp; <span style="color:var(--blue);font-size:0.68rem;">analysing geometry…</span>'
-              : item.geoError
-                ? '&nbsp;·&nbsp; <span style="color:var(--muted);font-size:0.68rem;">geometry unavailable</span>'
-                : item.geometry && item.geometry.bbox
-                  ? \`&nbsp;·&nbsp; <span style="color:var(--sub);font-size:0.68rem;">
-                      \${fmtMm(item.geometry.bbox.x)} × \${fmtMm(item.geometry.bbox.y)} × \${fmtMm(item.geometry.bbox.z)}
-                      &nbsp;·&nbsp; \${fmtVol(item.geometry.volume_mm3)}
-                    </span>\`
-                  : ''
-            }
-          </div>
+          <div class="fsize">${fmtSz(item.file.size)} &nbsp;·&nbsp; ${getExt(item.file).toUpperCase().slice(1)} &nbsp;·&nbsp; ${geoTag}</div>
         </div>
         <button class="file-remove-btn" data-idx="${idx}" title="Remove">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -821,16 +782,16 @@ function renderFiles() {
   document.getElementById('quote-error').classList.remove('visible');
 }
 
-// Upload events
+// ── Upload events ─────────────────────────────────────────────────────────────
 const zone = document.getElementById('upload-zone');
 const fi   = document.getElementById('file-input');
 zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
 zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
 zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); addFiles(e.dataTransfer.files); });
-fi.addEventListener('change', () => { addFiles(fi.files); fi.value=''; });
-document.getElementById('add-more-input').addEventListener('change', function() { addFiles(this.files); this.value=''; });
+fi.addEventListener('change', () => { const fs = Array.from(fi.files); fi.value = ''; addFiles(fs); });
+document.getElementById('add-more-input').addEventListener('change', function() { const fs = Array.from(this.files); this.value = ''; addFiles(fs); });
 
-// Build quote HTML
+// ── Quote HTML builder ────────────────────────────────────────────────────────
 function buildQuoteHTML(data) {
   const currency = data.currency || 'AUD';
   return `<div class="quote-line-items">` +
@@ -840,8 +801,8 @@ function buildQuoteHTML(data) {
           <div class="qli-name">${i.filename}</div>
           <div class="qli-meta">
             ${i.materialName} &nbsp;·&nbsp; ${i.finishName} &nbsp;·&nbsp; Qty ${i.quantity}
-            ${i.bbox ? '&nbsp;·&nbsp; ' + i.bbox : ''}
-            ${i.volume_mm3 ? '&nbsp;·&nbsp; ' + (i.volume_mm3 >= 1000 ? (i.volume_mm3/1000).toFixed(2)+' cm³' : i.volume_mm3.toFixed(0)+' mm³') : ''}
+            ${i.bbox       ? ' &nbsp;·&nbsp; ' + i.bbox : ''}
+            ${i.volume_mm3 ? ' &nbsp;·&nbsp; ' + (i.volume_mm3 >= 1000 ? (i.volume_mm3/1000).toFixed(2)+' cm³' : i.volume_mm3.toFixed(0)+' mm³') : ''}
           </div>
         </div>
         <div class="qli-price">$${i.lineTotal.toFixed(2)}</div>
@@ -853,48 +814,42 @@ function buildQuoteHTML(data) {
     </div>`;
 }
 
-// Navigation
+// ── Stage navigation ──────────────────────────────────────────────────────────
 document.getElementById('btn-to-quote').addEventListener('click', async () => {
+  if (files.some(f => f.analysing)) {
+    document.getElementById('quote-error').classList.add('visible');
+    document.getElementById('quote-error-msg').textContent = 'Still analysing geometry — please wait a moment and try again.';
+    return;
+  }
+
   orderRef = genRef();
   goTo(2);
   document.getElementById('analyzing').classList.add('visible');
   document.getElementById('quote-result').style.display = 'none';
 
   try {
-    // Block submission if any file is still being analysed
-    if (files.some(f => f.analysing)) {
-      document.getElementById('analyzing').classList.remove('visible');
-      goTo(1);
-      document.getElementById('quote-error').classList.add('visible');
-      document.getElementById('quote-error-msg').textContent = 'Still analysing geometry — please wait a moment and try again.';
-      return;
-    }
-
     const payload = {
       action: 'get_quote',
       items: files.map(item => ({
-        filename:    item.file.name,
-        volume_mm3:  item.geometry ? item.geometry.volume_mm3 : Math.max(10, item.file.size / 1024) * 0.4,
-        bbox:        item.geometry ? item.geometry.bbox : null,
-        materialId:  item.material.id,
-        finishId:    item.finish.id,
-        quantity:    item.quantity,
+        filename:   item.file.name,
+        volume_mm3: item.geometry ? item.geometry.volume_mm3 : Math.max(10, item.file.size / 1024) * 0.4,
+        bbox:       item.geometry ? item.geometry.bbox : null,
+        materialId: item.material.id,
+        finishId:   item.finish.id,
+        quantity:   item.quantity,
       })),
     };
 
     const resp   = await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify(payload) });
     const result = await resp.json();
-
     if (!result.success) throw new Error(result.error || 'Pricing error');
 
     quoteData = result;
     const currency = result.currency || 'AUD';
-
     document.getElementById('q-total').innerHTML = `$${result.total.toFixed(2)} <span style="font-size:1rem;font-weight:400;opacity:0.6;">${currency}</span>`;
     document.getElementById('q-ref').textContent  = 'Reference: ' + orderRef;
     document.getElementById('q-lead').textContent = result.leadTime;
     document.getElementById('quote-items').innerHTML = buildQuoteHTML(result);
-
     document.getElementById('analyzing').classList.remove('visible');
     document.getElementById('quote-result').style.display = 'block';
 
@@ -936,7 +891,7 @@ document.getElementById('btn-to-confirm').addEventListener('click', () => {
 
 document.getElementById('btn-back-3').addEventListener('click', () => goTo(3));
 
-// Submit
+// ── Submit ────────────────────────────────────────────────────────────────────
 document.getElementById('btn-submit').addEventListener('click', async () => {
   const btn = document.getElementById('btn-submit');
   btn.disabled = true;
@@ -998,6 +953,7 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
   }
 });
 
+// ── New order ─────────────────────────────────────────────────────────────────
 document.getElementById('btn-new-order').addEventListener('click', () => {
   files = []; quoteData = null; orderRef = '';
   document.getElementById('files-list').innerHTML = '';
@@ -1014,6 +970,7 @@ document.getElementById('btn-new-order').addEventListener('click', () => {
   goTo(1);
 });
 
+// ── Utilities ─────────────────────────────────────────────────────────────────
 function fileToBase64(file) {
   return new Promise((res, rej) => {
     const r = new FileReader();
@@ -1023,5 +980,6 @@ function fileToBase64(file) {
   });
 }
 </script>
+
 </body>
 </html>
