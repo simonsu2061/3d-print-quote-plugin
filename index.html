@@ -329,6 +329,23 @@ body {
 
     <!-- Stage 1: Upload -->
     <div class="stage active" id="stage-1">
+
+      <!-- Loading state while fetching materials from Sheet -->
+      <div id="options-loading" style="display:flex;flex-direction:column;align-items:center;padding:48px 32px;gap:14px;text-align:center;">
+        <div class="spin-ring"></div>
+        <p style="font-size:0.85rem;color:var(--sub);">Loading materials list…</p>
+      </div>
+
+      <!-- Error state -->
+      <div id="options-error" style="display:none;">
+        <div class="error-banner visible">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="options-error-msg">Could not load materials list. Please refresh the page.</span>
+        </div>
+      </div>
+
+      <!-- Main upload body — hidden until options loaded -->
+      <div id="stage-1-body" style="display:none;">
       <div class="info-banner">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         All models uploaded to Protoland are secure and confidential. You retain all rights to your models.
@@ -360,6 +377,7 @@ body {
       <div class="btn-row">
         <button class="btn btn-primary" id="btn-to-quote" disabled>Get Quote →</button>
       </div>
+      </div><!-- /stage-1-body -->
     </div>
 
     <!-- Stage 2: Quote -->
@@ -635,27 +653,40 @@ async function analyseGeometry(file) {
 }
 
 // ── Data ──────────────────────────────────────────────────────────────────────
-// Materials and finishes — display only, no rates (rates live in Google Sheet)
-const MATERIALS = [
-  { id:'fdm',    name:'FDM Standard',  tag:'FDM'     },
-  { id:'abs',    name:'ABS-like',      tag:'SLA'     },
-  { id:'nylon',  name:'Nylon',         tag:'SLS'     },
-  { id:'hitemp', name:'High Temp',     tag:'SLA'     },
-  { id:'clear',  name:'Transparent',   tag:'SLA'     },
-  { id:'rubber', name:'Rubber-like',   tag:'PolyJet' },
-];
-const FINISHES = [
-  { id:'raw',      name:'Raw / As Printed' },
-  { id:'clean',    name:'Support Removed'  },
-  { id:'sanded',   name:'Sanded'           },
-  { id:'polished', name:'Polished'         },
-  { id:'painted',  name:'Painted'          },
-];
+// Populated dynamically from Google Sheet on load
+let MATERIALS  = [];
+let FINISHES   = [];
 const ALLOWED_EXT = ['.stl','.obj','.3mf'];
 
 let files     = [];
 let quoteData = null;
 let orderRef  = '';
+
+// ── Load options from Sheet on startup ────────────────────────────────────────
+async function loadOptions() {
+  const loadingEl = document.getElementById('options-loading');
+  const errorEl   = document.getElementById('options-error');
+  const bodyEl    = document.getElementById('stage-1-body');
+
+  try {
+    const resp   = await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ action:'get_options' }) });
+    const result = await resp.json();
+    if (!result.success) throw new Error(result.error || 'Failed to load options');
+
+    MATERIALS = result.materials;
+    FINISHES  = result.finishes;
+
+    // Show the upload UI now that options are ready
+    loadingEl.style.display = 'none';
+    bodyEl.style.display    = '';
+
+  } catch(err) {
+    console.error(err);
+    loadingEl.style.display = 'none';
+    errorEl.style.display   = '';
+    document.getElementById('options-error-msg').textContent = 'Could not load materials list: ' + err.message + '. Please refresh the page.';
+  }
+}
 
 // ── UI helpers ────────────────────────────────────────────────────────────────
 function showToast(msg, warn=false) {
@@ -979,6 +1010,9 @@ function fileToBase64(file) {
     r.readAsDataURL(file);
   });
 }
+
+// ── Kick off ──────────────────────────────────────────────────────────────────
+loadOptions();
 </script>
 
 </body>
