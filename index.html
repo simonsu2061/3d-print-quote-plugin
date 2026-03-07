@@ -329,23 +329,7 @@ body {
 
     <!-- Stage 1: Upload -->
     <div class="stage active" id="stage-1">
-
-      <!-- Loading state while fetching materials from Sheet -->
-      <div id="options-loading" style="display:flex;flex-direction:column;align-items:center;padding:48px 32px;gap:14px;text-align:center;">
-        <div class="spin-ring"></div>
-        <p style="font-size:0.85rem;color:var(--sub);">Loading materials list…</p>
-      </div>
-
-      <!-- Error state -->
-      <div id="options-error" style="display:none;">
-        <div class="error-banner visible">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span id="options-error-msg">Could not load materials list. Please refresh the page.</span>
-        </div>
-      </div>
-
-      <!-- Main upload body — hidden until options loaded -->
-      <div id="stage-1-body" style="display:none;">
+      <div id="stage-1-body">
       <div class="info-banner">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         All models uploaded to Protoland are secure and confidential. You retain all rights to your models.
@@ -662,30 +646,21 @@ let files     = [];
 let quoteData = null;
 let orderRef  = '';
 
-// ── Load options from Sheet on startup ────────────────────────────────────────
-async function loadOptions() {
-  const loadingEl = document.getElementById('options-loading');
-  const errorEl   = document.getElementById('options-error');
-  const bodyEl    = document.getElementById('stage-1-body');
+// ── Load options from Sheet ───────────────────────────────────────────────────
+// Returns a promise that resolves when MATERIALS and FINISHES are populated.
+// Called in parallel with geometry analysis when the user first adds files.
+let optionsPromise = null;
 
-  try {
-    const resp   = await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ action:'get_options' }) });
-    const result = await resp.json();
-    if (!result.success) throw new Error(result.error || 'Failed to load options');
-
-    MATERIALS = result.materials;
-    FINISHES  = result.finishes;
-
-    // Show the upload UI now that options are ready
-    loadingEl.style.display = 'none';
-    bodyEl.style.display    = '';
-
-  } catch(err) {
-    console.error(err);
-    loadingEl.style.display = 'none';
-    errorEl.style.display   = '';
-    document.getElementById('options-error-msg').textContent = 'Could not load materials list: ' + err.message + '. Please refresh the page.';
-  }
+function loadOptions() {
+  if (optionsPromise) return optionsPromise; // already fetching or fetched
+  optionsPromise = fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ action:'get_options' }) })
+    .then(r => r.json())
+    .then(result => {
+      if (!result.success) throw new Error(result.error || 'Failed to load options');
+      MATERIALS = result.materials;
+      FINISHES  = result.finishes;
+    });
+  return optionsPromise;
 }
 
 // ── UI helpers ────────────────────────────────────────────────────────────────
@@ -717,26 +692,49 @@ async function addFiles(list) {
   });
   if (!newFiles.length) return;
 
-  // Push entries immediately so UI responds right away
-  newFiles.forEach(f => files.push({
-    file:f, material:MATERIALS[0], finish:FINISHES[0], quantity:1,
-    geometry:null, analysing:true, geoError:false
-  }));
-  renderFiles();
+  // Show upload zone as "loading" while we wait
+  document.getElementById('upload-zone').style.display = 'none';
+  document.getElementById('add-more-btn').style.display = 'none';
+  document.getElementById('btn-to-quote').disabled = true;
 
-  // Analyse geometry for each new file
-  await Promise.all(newFiles.map(async f => {
-    const entry = files.find(x => x.file === f);
-    if (!entry) return;
-    try {
-      entry.geometry  = await analyseGeometry(f);
-      entry.analysing = false;
-    } catch(e) {
-      entry.analysing = false;
-      entry.geoError  = true;
-    }
-    renderFiles();
+  // Show a temporary loading indicator in the file list
+  const listEl = document.getElementById('files-list');
+  if (files.length === 0) {
+    listEl.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:16px;color:var(--sub);font-size:0.82rem;">
+      <div class="spin-ring" style="width:20px;height:20px;border-width:2px;"></div>
+      Loading materials &amp; analysing geometry…
+    </div>`;
+  }
+
+  // Run options fetch and geometry analysis in parallel
+  const geoResults = new Map();
+  await Promise.all([
+    // Fetch materials/finishes list (no-op if already loaded)
+    loadOptions().catch(err => {
+      showToast('Could not load materials list: ' + err.message, true);
+    }),
+    // Analyse geometry for each new file
+    ...newFiles.map(async f => {
+      try {
+        geoResults.set(f, await analyseGeometry(f));
+      } catch(e) {
+        geoResults.set(f, null);
+      }
+    }),
+  ]);
+
+  // Now push all new files with results — MATERIALS is guaranteed populated here
+  newFiles.forEach(f => files.push({
+    file:      f,
+    material:  MATERIALS[0] || { id:'', name:'—', tag:'' },
+    finish:    FINISHES[0]  || { id:'', name:'—' },
+    quantity:  1,
+    geometry:  geoResults.get(f),
+    analysing: false,
+    geoError:  geoResults.get(f) === null,
   }));
+
+  renderFiles();
 }
 
 function removeFile(idx) { files.splice(idx,1); renderFiles(); }
@@ -956,13 +954,16 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
       lead_time:      quoteData.leadTime,
       cost_breakdown: quoteData._costBreakdown || {},
       items: quoteData.items.map(item => ({
-        filename:   item.filename,
-        material:   item.materialName,
-        finish:     item.finishName,
-        quantity:   item.quantity,
-        volume_mm3: item.volume_mm3 || null,
-        bbox:       item.bbox       || null,
-        price:      '$' + item.lineTotal.toFixed(2),
+        filename:          item.filename,
+        material:          item.materialName,
+        finish:            item.finishName,
+        quantity:          item.quantity,
+        volume_mm3:        item.volume_mm3        || null,
+        bbox:              item.bbox              || null,
+        price:             '$' + item.lineTotal.toFixed(2),
+        raw_material_cost: item.rawMaterialCost != null
+                           ? '$' + item.rawMaterialCost.toFixed(2)
+                           : '',
       })),
       files: filePayloads,
     };
@@ -1013,8 +1014,7 @@ function fileToBase64(file) {
   });
 }
 
-// ── Kick off ──────────────────────────────────────────────────────────────────
-loadOptions();
+// Options are loaded lazily when the user first adds files
 </script>
 
 </body>
