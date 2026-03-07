@@ -784,7 +784,7 @@ function renderFiles() {
           <label>Finish</label>
           <div class="select-wrap">
             <select class="fin-sel" data-idx="${idx}">
-              ${FINISHES.map(f=>`<option value="${f.id}" ${f.id===item.finish.id?'selected':''}>${f.name}</option>`).join('')}
+              ${FINISHES.map(f=>`<option value="${f.id}" ${f.id===item.finish.id?'selected':''}>${f.name}${f.fee > 0 ? ' (+$' + f.fee.toFixed(2) + '/part)' : ''}</option>`).join('')}
             </select>
           </div>
         </div>
@@ -824,18 +824,29 @@ document.getElementById('add-more-input').addEventListener('change', function() 
 function buildQuoteHTML(data) {
   const currency = data.currency || 'AUD';
 
-  const itemRows = data.items.map(i => `
+  const itemRows = data.items.map(i => {
+    // Show finish cost as a sub-line only when finish adds cost (multiplier > 1.0)
+    const finishRow = (i.finishCost > 0) ? `
+      <div class="quote-line-item" style="padding-top:6px;padding-bottom:6px;background:var(--bg);">
+        <div class="qli-left">
+          <div class="qli-meta" style="font-size:0.75rem;">↳ ${i.finishName} finish</div>
+        </div>
+        <div class="qli-price" style="font-size:0.78rem;color:var(--sub);">+$${i.finishCost.toFixed(2)}</div>
+      </div>` : '';
+
+    return `
     <div class="quote-line-item">
       <div class="qli-left">
         <div class="qli-name">${i.filename}</div>
         <div class="qli-meta">
-          ${i.materialName} &nbsp;·&nbsp; ${i.finishName} &nbsp;·&nbsp; Qty ${i.quantity}
+          ${i.materialName} &nbsp;·&nbsp; Qty ${i.quantity}
           ${i.bbox       ? ' &nbsp;·&nbsp; ' + i.bbox : ''}
           ${i.volume_mm3 ? ' &nbsp;·&nbsp; ' + (i.volume_mm3 >= 1000 ? (i.volume_mm3/1000).toFixed(2)+' cm³' : i.volume_mm3.toFixed(0)+' mm³') : ''}
         </div>
       </div>
       <div class="qli-price">$${i.lineTotal.toFixed(2)}</div>
-    </div>`).join('');
+    </div>${finishRow}`;
+  }).join('');
 
   return `<div class="quote-line-items">${itemRows}</div>
     <div class="quote-total-row">
@@ -961,9 +972,8 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
         volume_mm3:        item.volume_mm3        || null,
         bbox:              item.bbox              || null,
         price:             '$' + item.lineTotal.toFixed(2),
-        raw_material_cost: item.rawMaterialCost != null
-                           ? '$' + item.rawMaterialCost.toFixed(2)
-                           : '',
+        raw_material_cost: item.rawMaterialCost != null ? '$' + item.rawMaterialCost.toFixed(2) : '',
+        finish_cost:       item.finishCost      != null ? '$' + item.finishCost.toFixed(2)      : '',
       })),
       files: filePayloads,
     };
