@@ -839,17 +839,7 @@ function buildQuoteHTML(data) {
       <div class="qli-price">$${i.lineTotal.toFixed(2)}</div>
     </div>`).join('');
 
-  // Setup fee row — shown only when present
-  const setupRow = (data.setupFeeTotal > 0) ? `
-    <div class="quote-line-item" style="background:var(--bg);">
-      <div class="qli-left">
-        <div class="qli-name" style="color:var(--sub);">Setup Fee</div>
-        <div class="qli-meta">${(data.setupFeeLines || []).join(' &nbsp;·&nbsp; ')}</div>
-      </div>
-      <div class="qli-price" style="color:var(--sub);">$${data.setupFeeTotal.toFixed(2)}</div>
-    </div>` : '';
-
-  return `<div class="quote-line-items">${itemRows}${setupRow}</div>
+  return `<div class="quote-line-items">${itemRows}</div>
     <div class="quote-total-row">
       <div class="label">Estimated Total</div>
       <div class="amount">$${data.total.toFixed(2)} ${currency}</div>
@@ -962,10 +952,9 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
       company:      document.getElementById('f-company').value.trim(),
       address:      document.getElementById('f-address').value.trim(),
       notes:        document.getElementById('f-notes').value.trim(),
-      price:        '$' + quoteData.total.toFixed(2) + ' ' + currency,
-      setup_fee:    '$' + (quoteData.setupFeeTotal || 0).toFixed(2) + ' (' + (quoteData.setupFeeLines || []).join(', ') + ')',
-      margin:       '$' + (quoteData.marginAmount  || 0).toFixed(2) + ' (' + (quoteData.targetMargin || '—') + ')',
-      lead_time:    quoteData.leadTime,
+      price:          '$' + quoteData.total.toFixed(2) + ' ' + currency,
+      lead_time:      quoteData.leadTime,
+      cost_breakdown: quoteData._costBreakdown || {},
       items: quoteData.items.map(item => ({
         filename:   item.filename,
         material:   item.materialName,
